@@ -1,0 +1,511 @@
+{
+  "Uuid": "38fd94c8-d43f-4ac6-9a76-dbec16d66b1a",
+  "IsCustomNode": false,
+  "Description": null,
+  "Name": "Speech.Recognition_DynamoBim_V5",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# -*- coding: utf-8 -*-\r\nimport sys\r\nimport clr\r\nimport System \r\nimport time\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\n#import Revit API\r\nclr.AddReference('RevitAPI')\r\nimport Autodesk\r\nfrom Autodesk.Revit.DB import *\r\n\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import *\r\n\r\n\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\n\r\nclr.AddReference(\"System.Windows.Forms\")\r\nimport System.Windows.Forms\r\nfrom System.Windows.Forms import * \r\nfrom System import Array \r\n\r\nclr.AddReference(\"System.Speech, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35\")\r\nfrom System.Speech.Recognition import (SpeechRecognitionEngine, GrammarBuilder, Grammar, Choices, RecognizeMode)\r\nfrom System.Threading import Thread, ThreadStart\r\nfrom System.Speech.Synthesis import SpeechSynthesizer\r\n\r\n\r\n\t\r\n\r\nclass ModExtEvent(IExternalEventHandler):\r\n\tdef __init__(self, comandePostable):\r\n\t\tself._comandePostable = comandePostable\r\n\t\tself.name = comandePostable.ToString()\r\n\r\n\tdef Execute(self, _uiap):\r\n\t\t_uiap.PostCommand(RevitCommandId.LookupPostableCommandId(self._comandePostable)) \r\n\t\t\r\n\tdef GetName(self):\r\n\t\treturn self.name\t\r\n\r\n\r\nclass EventUtils(ModExtEvent):\r\n\tdef __init__(self, comandePostable):\r\n\t\tModExtEvent.__init__(self, comandePostable)\r\n\t\tself.ext_event = ExternalEvent.Create(self)\r\n\t\t\r\n\r\ndef main(*args):\r\n\tglobal lstComandName\r\n\tlstName = Array[System.String]( [x.name for x in args] + [\"quit\"])\r\n\tlstComandName = lstName[:]\r\n\t#MessageBox.Show('_'.join([x.name for x in args]))\r\n\t#MessageBox.Show(\"SpeechRecognition Start \\n\\n-\" + '\\n-'.join([x for x in lstName]))\r\n\tsre = SpeechRecognitionEngine()\r\n\tsre.SetInputToDefaultAudioDevice()\r\n\tsre.UnloadAllGrammars()\r\n\r\n\tgb = GrammarBuilder()\r\n\tgb.Append(Choices(lstName))\r\n\tsre.LoadGrammar(Grammar(gb))\r\n\t\r\n\tspk = SpeechSynthesizer()\r\n\t#spk.Speak('Hello world!')\r\n\t\r\n\tdef OnSpeechRecognized(sender, e):\r\n\t\t#MessageBox.Show(e.Result.Text)\r\n\t\tspk.Speak(e.Result.Text + \"Command Processing\")\r\n\t\tif \"quit\" in e.Result.Text :\r\n\t\t\t#pass\r\n\t\t\tThread.CurrentThread.Join()\r\n\t\t\tThread.CurrentThread.Abort()\t\r\n\t\telse:\t\r\n\t\t\tfor objEvent in args:\r\n\t\t\t\tif e.Result.Text == objEvent.name:\r\n\t\t\t\t\tobjEvent.ext_event.Raise()\t\r\n\t\t\t\t\t\r\n\r\n\t\t\r\n\tsre.SpeechRecognized += OnSpeechRecognized\r\n\r\n\tsre.RecognizeAsync(RecognizeMode.Multiple)\r\n\r\n\r\nlstComandName = []\r\n\r\nif False:\t\r\n\t#event for Mirror\r\n\t#obj_handlerMi = ModExtEvent(PostableCommand.MirrorProject)\r\n\t#ext_eventMi = ExternalEvent.Create(obj_handlerMi)\r\n\t#event for Tag\r\n\t#obj_handlerSpace = ModExtEvent(PostableCommand.Space)\r\n\t#ext_eventSpace = ExternalEvent.Create(obj_handlerSpace)\r\n\t#main(ext_eventMi, ext_eventSpace)\r\n\r\n\tobj_handlerMi = EventUtils(PostableCommand.MirrorProject)\r\n\tobj_handlerSpace = EventUtils(PostableCommand.Space)\r\n\tobj_handlerModLine = EventUtils(PostableCommand.ModelLine)\r\n\t#main(obj_handlerMi, obj_handlerSpace)\r\n\tthread = Thread(ThreadStart(lambda : main(obj_handlerMi, obj_handlerSpace, obj_handlerModLine)))\r\n\tthread.Start()\r\n\ttime.sleep(2)\r\n\t\r\n\t\t\r\n\tOUT = lstComandName \r\n",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "64af15ea2d5c4077a06910cf25814914",
+      "Inputs": [
+        {
+          "Id": "c2be651f030b4a9990f4f2ec8bd7a8ee",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0cfeacbda41846c8bb7bb35a4b3759c7",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "9171dcbf3cd346009cfa614f1ddd0f24",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "49d5800492c14b67845faf01432c359e",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélection entre True et False."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSCore.DateTime.Now",
+      "Id": "f320b92c34df4e33b9443413e1a18e3b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c3c851d1ac904acf8385dec504e8e7a9",
+          "Name": "dateTime",
+          "Description": "DateTime",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Date et heure actuelles du système.\n\nDateTime.Now: var"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# coding: utf-8\r\nimport sys\r\nimport clr\r\nimport System \r\n\r\n#import Revit API\r\nclr.AddReference('RevitAPI')\r\nimport Autodesk\r\nfrom Autodesk.Revit.DB import *\r\n\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import *\r\n\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\n\r\nclr.AddReference(\"System.Windows.Forms\")\r\nimport System.Windows.Forms\r\nfrom System.Windows.Forms import * \r\nfrom System import Array \r\n\r\nclr.AddReference(\"System.Speech, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35\")\r\nfrom System.Speech.Recognition import (SpeechRecognitionEngine, GrammarBuilder, Grammar, Choices, RecognizeMode)\r\nfrom System.Threading import Thread, ThreadStart\r\nfrom System.Speech.Synthesis import SpeechSynthesizer\r\n\t\r\n\r\nclass ModExtEvent(IExternalEventHandler):\r\n\tdef __init__(self, comandePostable):\r\n\t\tself._comandePostable = comandePostable\r\n\t\tself.name = comandePostable.ToString()\r\n\r\n\tdef Execute(self, _uiap):\r\n\t\t_uiap.PostCommand(RevitCommandId.LookupPostableCommandId(self._comandePostable)) \r\n\t\t\r\n\tdef GetName(self):\r\n\t\treturn self.name\t\r\n\r\n\r\nclass EventUtils(ModExtEvent):\r\n\tdef __init__(self, comandePostable):\r\n\t\tModExtEvent.__init__(self, comandePostable)\r\n\t\tself.ext_event = ExternalEvent.Create(self)\r\n\t\t\r\n\r\ndef main(*args):\r\n\tglobal lstComandName\r\n\tlstName = Array[System.String]([x.name for x in args])\r\n\tlstComandName = lstName[:]\r\n\t#\r\n\tsre = SpeechRecognitionEngine()\r\n\tsre.SetInputToDefaultAudioDevice()\r\n\tsre.UnloadAllGrammars()\r\n\t#\r\n\tgb = GrammarBuilder()\r\n\tgb.Append(Choices(lstName))\r\n\tsre.LoadGrammar(Grammar(gb))\r\n\t#init Voice Synthesizer\r\n\tspk = SpeechSynthesizer()\r\n\t\r\n\tdef OnSpeechRecognized(sender, e):\t\r\n\t\tspk.Speak(e.Result.Text + \"Command Processing\")\r\n\t\tfor objEvent in args:\r\n\t\t\tif e.Result.Text == objEvent.name:\r\n\t\t\t\tobjEvent.ext_event.Raise()\t\r\n\t\t\t\t\t\r\n\t\r\n\tsre.SpeechRecognized += OnSpeechRecognized\r\n\tsre.RecognizeAsync(RecognizeMode.Multiple)\r\nif False:\r\n\tlstComandName = []\r\n\tobj_handlerMi = EventUtils(PostableCommand.MirrorProject)\r\n\tobj_handlerSpace = EventUtils(PostableCommand.Space)\r\n\tobj_handlerModLine = EventUtils(PostableCommand.ModelLine)\r\n\tmain(obj_handlerMi, obj_handlerSpace, obj_handlerModLine)\r\n\t\r\n\t\t\t\r\n\tOUT = lstComandName\r\n",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "d8c0d3d8626f4e30b3bb0eecfd34f812",
+      "Inputs": [
+        {
+          "Id": "01b53c96144540169d3a8775ffd75a1f",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9cb2ad287a1c4dba9fa467404bb5c3ef",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "3bd1ca02ea3f453e81bc3e718e2df7cc",
+      "Inputs": [
+        {
+          "Id": "28d36421210142488d2fafc00401ee15",
+          "Name": "",
+          "Description": "Noeud à évaluer.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "593eec2941dd4e16ad6f3d47f7d5fa6f",
+          "Name": "",
+          "Description": "Regarder le contenu.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualiser la sortie du noeud."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "ca47b76842cb4992a4ca523f44728a76",
+      "Inputs": [
+        {
+          "Id": "2d8c98c420a84b9a956afcc6b48d964f",
+          "Name": "",
+          "Description": "Noeud à évaluer.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "01ff6f107194418ebd04ed46cefa9c79",
+          "Name": "",
+          "Description": "Regarder le contenu.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualiser la sortie du noeud."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# -*- coding: utf-8 -*-\r\nimport sys\r\nimport clr\r\nimport System \r\nimport time\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\n#import Revit API\r\nclr.AddReference('RevitAPI')\r\nimport Autodesk\r\nfrom Autodesk.Revit.DB import *\r\n\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import *\r\n\r\n\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\nuiapp = DocumentManager.Instance.CurrentUIApplication\r\n\r\nclr.AddReference(\"System.Drawing\")\r\nclr.AddReference(\"System.Windows.Forms\")\r\nimport System.Drawing\r\nimport System.Windows.Forms\r\n\r\nfrom System.Drawing import *\r\nfrom System.Windows.Forms import *\r\n\r\nfrom System import Array \r\n\r\nclr.AddReference(\"System.Speech, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35\")\r\nfrom System.Speech.Recognition import (SpeechRecognitionEngine, GrammarBuilder, Grammar, Choices, RecognizeMode)\r\nfrom System.Threading import Thread, ThreadStart\r\nfrom System.Speech.Synthesis import SpeechSynthesizer\r\n\r\n\r\n\t\r\n\r\nclass ModExtEvent(IExternalEventHandler):\r\n\tdef __init__(self, comandePostable):\r\n\t\tself._comandePostable = comandePostable\r\n\t\tself.name = comandePostable.ToString()\r\n\r\n\tdef Execute(self, _uiap):\r\n\t\t_uiap.PostCommand(RevitCommandId.LookupPostableCommandId(self._comandePostable)) \r\n\t\t\r\n\tdef GetName(self):\r\n\t\treturn self.name\t\r\n\r\n\r\nclass EventUtils(ModExtEvent):\r\n\tdef __init__(self, comandePostable):\r\n\t\tModExtEvent.__init__(self, comandePostable)\r\n\t\tself.ext_event = ExternalEvent.Create(self)\r\n\t\t\r\n\t\t\r\n\t\t\r\n\t\t\r\nclass Form1(Form):\r\n\tdef __init__(self, *args):\r\n\t\tlstName = Array[System.String]( [x.name for x in args] + [\"quit\"])\r\n\t\tself.lstComandName = lstName[:]\r\n\t\tself.args = args\r\n\r\n\t\tself.sre = SpeechRecognitionEngine()\r\n\t\tself.sre.SetInputToDefaultAudioDevice()\r\n\t\tself.sre.UnloadAllGrammars()\r\n\t\r\n\t\tgb = GrammarBuilder()\r\n\t\tgb.Append(Choices(lstName))\r\n\t\tself.sre.LoadGrammar(Grammar(gb))\r\n\t\t\r\n\t\tself.spk = SpeechSynthesizer()\r\n\t\tself.InitializeComponent()\r\n\t\r\n\tdef InitializeComponent(self):\r\n\r\n\t\tself._buttonStart = System.Windows.Forms.Button()\r\n\t\tself._buttonStop = System.Windows.Forms.Button()\r\n\t\tself.SuspendLayout()\r\n\t\t# \r\n\t\t# buttonStart\r\n\t\t# \r\n\t\tself._buttonStart.Location = System.Drawing.Point(54, 34)\r\n\t\tself._buttonStart.Name = \"buttonStart\"\r\n\t\tself._buttonStart.Size = System.Drawing.Size(178, 50)\r\n\t\tself._buttonStart.TabIndex = 0\r\n\t\tself._buttonStart.Text = \"Start\"\r\n\t\tself._buttonStart.UseVisualStyleBackColor = True\r\n\t\tself._buttonStart.Click += self.ButtonStartClick\r\n\t\t# \r\n\t\t# buttonStop\r\n\t\t# \r\n\t\tself._buttonStop.Location = System.Drawing.Point(54, 99)\r\n\t\tself._buttonStop.Name = \"buttonStop\"\r\n\t\tself._buttonStop.Size = System.Drawing.Size(178, 50)\r\n\t\tself._buttonStop.TabIndex = 0\r\n\t\tself._buttonStop.Text = \"Stop\"\r\n\t\tself._buttonStop.UseVisualStyleBackColor = True\r\n\t\tself._buttonStop.Click += self.ButtonStopClick\r\n\t\t# \r\n\t\t# Form1\r\n\t\t# \r\n\t\tself.ClientSize = System.Drawing.Size(284, 186)\r\n\t\tself.Controls.Add(self._buttonStop)\r\n\t\tself.Controls.Add(self._buttonStart)\r\n\t\tself.Name = \"Form1\"\r\n\t\tself.Text = \"Form1\"\r\n\t\tself.ResumeLayout(False)\r\n\r\n\r\n\tdef ButtonStartClick(self, sender, e):\r\n\t\tself.thread = Thread(ThreadStart(self.StartRecognition))\r\n\t\tself.thread.Start()\r\n\r\n\tdef ButtonStopClick(self, sender, e):\r\n\t\tself.thread.Join()\r\n\t\tself.thread.Abort()\r\n\t\tself.Close()\t\r\n\r\n\tdef StartRecognition(self):\r\n\t\tself.sre.SpeechRecognized += self.OnSpeechRecognized\r\n\t\tself.sre.RecognizeAsync(RecognizeMode.Multiple)\r\n\r\n\tdef OnSpeechRecognized(self, sender, e):\r\n\t\tMessageBox.Show(e.Result.Text)\r\n\t\t\"\"\"\r\n\t\tself.spk.Speak(e.Result.Text + \"Command Processing\")\r\n\t\tif \"quit\" in e.Result.Text :\r\n\t\t\tpass\r\n\t\t\t#Thread.CurrentThread.Join()\r\n\t\t\t#Thread.CurrentThread.Abort()\t\r\n\t\telse:\t\r\n\t\t\tfor objEvent in self.args:\r\n\t\t\t\tif e.Result.Text == objEvent.name:\r\n\t\t\t\t\tobjEvent.ext_event.Raise()\t\t\t\r\n\t\t\"\"\"\r\nif False:\r\n\tobj_handlerMi = EventUtils(PostableCommand.MirrorProject)\r\n\tobj_handlerSpace = EventUtils(PostableCommand.Space)\r\n\tobj_handlerModLine = EventUtils(PostableCommand.ModelLine)\r\n\t\r\n\tobjForm = Form1(obj_handlerMi, obj_handlerSpace, obj_handlerModLine)\t\r\n\tobjForm.Show()\r\n\t\t\t\r\n\tOUT = objForm.lstComandName \r\n",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "a3f04d4d5cb6465f85ac968e2154cd03",
+      "Inputs": [
+        {
+          "Id": "2b5fa4e3afa6497cad29002a1fb82dff",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6ba2aee402d44bd5afc151991d16b1b4",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "d5dc9e4e5e4144c0a6bb762cbfc28325",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "dbe56741867740139ebe0751caeb845d",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélection entre True et False."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "[\"ElectricalFixture\",\n\"ElectricalEquipment\",\n\"LightingFixture\",\n\"FireAlarm\",\n\"Lighting\",\n\"Security\",\n\"Data\",\n\"NurseCall\",\n\"MirrorProject\",\n\"Space\",\n\"SpotCoordinate\",\n\"VisibilityOrGraphics\",\n\"CloseInactiveViews\",\n\"CloseHiddenWindows\",\n\"AlignedDimension\",\n\"LinearDimension\",\n\"SystemBrowser\",\n\"Camera\",\n\"Align\",\n\"BrowserOrganization\"];",
+      "Id": "f4e58cedea1b43e393409c2e68fc87e8",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "48ef3207ef7d447a8d2b68dd69dd0088",
+          "Name": "",
+          "Description": "Valeur de l'expression à la ligne 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Permet de créer le code DesignScript directement"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "#coding: utf-8\r\n#written by Cyril POUPIN\r\n#v5\r\nimport sys\r\nimport clr\r\nimport System \r\n\r\nclr.AddReference('RevitAPI')\r\nimport Autodesk\r\nfrom Autodesk.Revit.DB import *\r\n\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import *\r\n\r\nclr.AddReference(\"System.Drawing\")\r\nclr.AddReference(\"System.Windows.Forms\")\r\nimport System.Drawing\r\nimport System.Windows.Forms\r\n\r\nfrom System.Drawing import *\r\nfrom System.Windows.Forms import *\r\nfrom System import Array \r\n\r\nclr.AddReference(\"System.Speech, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35\")\r\nfrom System.Speech.Recognition import (SpeechRecognitionEngine, GrammarBuilder, Grammar, Choices, RecognizeMode)\r\nfrom System.Speech.Synthesis import SpeechSynthesizer, VoiceGender, VoiceAge\r\n\r\n\r\nclass ModExtEvent(IExternalEventHandler):\r\n\tdef __init__(self, comandePostable):\r\n\t\tself._comandePostable = comandePostable\r\n\t\tself.name = comandePostable.ToString()\r\n\r\n\tdef Execute(self, _uiap):\r\n\t\t_uiap.PostCommand(RevitCommandId.LookupPostableCommandId(self._comandePostable)) \r\n\t\t\r\n\tdef GetName(self):\r\n\t\treturn self.name\t\r\n\r\nclass EventUtils(ModExtEvent):\r\n\tdef __init__(self, comandePostable):\r\n\t\tModExtEvent.__init__(self, comandePostable)\r\n\t\tself.ext_event = ExternalEvent.Create(self)\r\n\t\t\r\n\t\t\t\r\nclass Form1(Form):\r\n\tdef __init__(self, lstObj_handler):\r\n\t\tlstName = Array[System.String]( [x.name for x in lstObj_handler])\r\n\t\tself.lstComandName = lstName[:]\r\n\t\tself._lstObj_handler = lstObj_handler\r\n\t\tgreatBritainCulture = System.Globalization.CultureInfo(\"en-GB\")\r\n\t\tself.sre = SpeechRecognitionEngine()\r\n\t\tself.sre.SetInputToDefaultAudioDevice()\r\n\t\tself.sre.UnloadAllGrammars()\r\n\t\tgb = GrammarBuilder()\r\n\t\tgb.Append(Choices(lstName))\r\n\t\tself.sre.LoadGrammar(Grammar(gb))\r\n\t\tself.sre.MaxAlternates = 1\r\n\t\t\r\n\t\tself.spk = SpeechSynthesizer()\r\n\t\tself.spk .SelectVoiceByHints(VoiceGender.Female, VoiceAge.Senior, 0, greatBritainCulture)\r\n\t\tself.InitializeComponent()\r\n\t\r\n\tdef InitializeComponent(self):\r\n\t\tself.spk.Speak(\"Start Speech Recognition Engine\")\r\n\t\tself._buttonStop = System.Windows.Forms.Button()\r\n\t\tself._listBox1 = System.Windows.Forms.ListBox()\r\n\t\tself._label1 = System.Windows.Forms.Label()\r\n\t\tself.SuspendLayout()\r\n\t\tself.sre.SpeechRecognized += self.OnSpeechRecognized\r\n\t\tself.sre.RecognizeAsync(RecognizeMode.Multiple)\r\n\t\t# \r\n\t\t# buttonStop\r\n\t\tself._buttonStop.Location = System.Drawing.Point(51, 190)\r\n\t\tself._buttonStop.Name = \"buttonStop\"\r\n\t\tself._buttonStop.Size = System.Drawing.Size(178, 50)\r\n\t\tself._buttonStop.TabIndex = 0\r\n\t\tself._buttonStop.Text = \"Stop Engine\"\r\n\t\tself._buttonStop.UseVisualStyleBackColor = True\r\n\t\tself._buttonStop.Click += self.ButtonStopClick\r\n\t\t# \r\n\t\t# listBox1\r\n\t\tself._listBox1.FormattingEnabled = True\r\n\t\tself._listBox1.Items.AddRange(System.Array[System.Object](self.lstComandName))\r\n\t\tself._listBox1.Location = System.Drawing.Point(51, 34)\r\n\t\tself._listBox1.Name = \"listBox1\"\r\n\t\tself._listBox1.Size = System.Drawing.Size(178, 134)\r\n\t\tself._listBox1.TabIndex = 1\r\n\t\t# \r\n\t\t# label1\r\n\t\tself._label1.Location = System.Drawing.Point(51, 5)\r\n\t\tself._label1.Name = \"label1\"\r\n\t\tself._label1.Size = System.Drawing.Size(178, 23)\r\n\t\tself._label1.TabIndex = 2\r\n\t\tself._label1.Text = \"List Voice Commands available\"\r\n\t\t# \r\n\t\t# Form1\r\n\t\tself.ClientSize = System.Drawing.Size(284, 252)\r\n\t\tself.Controls.Add(self._label1)\r\n\t\tself.Controls.Add(self._listBox1)\r\n\t\tself.Controls.Add(self._buttonStop)\r\n\t\tself.Name = \"SpeechRecognition\"\r\n\t\tself.Text = \"Speech Recognition\"\r\n\t\tself.ResumeLayout(False)\r\n\r\n\tdef ButtonStopClick(self, sender, e):\r\n\t\tself.spk.Speak(\"Stop Speech Recognition Engine, see you soon!\")\r\n\t\tfor objEvent in self._lstObj_handler:\r\n\t\t\tobjEvent.ext_event.Dispose()\t\r\n\t\tself.sre.Dispose()\r\n\t\tself.spk.Dispose()\r\n\t\tself.Close()\t\r\n\r\n\tdef OnSpeechRecognized(self, sender, e):\r\n\t\tself.sre.RecognizeAsyncStop()\r\n\t\tself.spk.Speak(e.Result.Text + \"Command Processing\")\r\n\t\tfor objEvent in self._lstObj_handler:\r\n\t\t\tif e.Result.Text == objEvent.name:\r\n\t\t\t\tobjEvent.ext_event.Raise()\t\t\r\n\t\tself.sre.RecognizeAsync(RecognizeMode.Multiple)\t\t\t\t\r\n\r\nlstEnumsPCmd = System.Enum.GetNames(PostableCommand)\r\nlstObj_handler = [EventUtils(eval(\"PostableCommand.\" + nameCommand)) for nameCommand in IN[0] if nameCommand in lstEnumsPCmd ]\r\n\r\nobjForm = Form1(lstObj_handler)\t\r\nobjForm.Show()\r\n\t\t\r\nOUT = objForm.lstComandName, lstEnumsPCmd\r\n",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "b7de64a1c7a6427c86d6dff3d862cc19",
+      "Inputs": [
+        {
+          "Id": "044af21698e14540afba02c1964f8169",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "ec1d4e7e6fa54434ad93259c02cae7d0",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "0cfeacbda41846c8bb7bb35a4b3759c7",
+      "End": "2d8c98c420a84b9a956afcc6b48d964f",
+      "Id": "d4c3eefe5f8f4e5ab47e0fbf2efb3550"
+    },
+    {
+      "Start": "49d5800492c14b67845faf01432c359e",
+      "End": "c2be651f030b4a9990f4f2ec8bd7a8ee",
+      "Id": "73a2f0503d484bc8a3dc238d375c82ed"
+    },
+    {
+      "Start": "c3c851d1ac904acf8385dec504e8e7a9",
+      "End": "01b53c96144540169d3a8775ffd75a1f",
+      "Id": "48b7e99b934947818ec0eafa720fd461"
+    },
+    {
+      "Start": "9cb2ad287a1c4dba9fa467404bb5c3ef",
+      "End": "28d36421210142488d2fafc00401ee15",
+      "Id": "401854a6a15b4423a01017f4d2bbd825"
+    },
+    {
+      "Start": "dbe56741867740139ebe0751caeb845d",
+      "End": "2b5fa4e3afa6497cad29002a1fb82dff",
+      "Id": "58cabad78d0043f4aa779211b59e43c2"
+    },
+    {
+      "Start": "48ef3207ef7d447a8d2b68dd69dd0088",
+      "End": "044af21698e14540afba02c1964f8169",
+      "Id": "954b991a62be44abadcea57685eaa257"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.8.0.2471",
+      "RunType": "Manual",
+      "RunPeriod": "30000"
+    },
+    "Camera": {
+      "Name": "Aperçu en arrière-plan",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "64af15ea2d5c4077a06910cf25814914",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": true,
+        "X": 826.26551516904124,
+        "Y": 65.502308414460856
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Boolean",
+        "Id": "9171dcbf3cd346009cfa614f1ddd0f24",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 277.96611566657072,
+        "Y": 68.532430583600245
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "DateTime.Now",
+        "Id": "f320b92c34df4e33b9443413e1a18e3b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 252.16398126185328,
+        "Y": 311.15879686195154
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "d8c0d3d8626f4e30b3bb0eecfd34f812",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": true,
+        "X": 530.01692319569952,
+        "Y": 310.59740278905707
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "list Voices Command",
+        "Id": "3bd1ca02ea3f453e81bc3e718e2df7cc",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 837.23869524067493,
+        "Y": 309.82733702057737
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "list Voices Command",
+        "Id": "ca47b76842cb4992a4ca523f44728a76",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1023.2711502659636,
+        "Y": 12.742370159417362
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "a3f04d4d5cb6465f85ac968e2154cd03",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 729.47442836359448,
+        "Y": 546.03002353668285
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Boolean",
+        "Id": "d5dc9e4e5e4144c0a6bb762cbfc28325",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": true,
+        "X": 293.09484020633334,
+        "Y": 550.94758921590608
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "List PostableCommand Enumeration (Revit API)",
+        "Id": "f4e58cedea1b43e393409c2e68fc87e8",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 531.52752355751079,
+        "Y": 969.35225902229945
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "b7de64a1c7a6427c86d6dff3d862cc19",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1124.8269208089562,
+        "Y": 967.031634141623
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "e0601121ab2f416d88a733ddf1b1acc3",
+        "Title": "with a main Thread and message Box",
+        "Nodes": [
+          "64af15ea2d5c4077a06910cf25814914"
+        ],
+        "Left": 816.26551516904124,
+        "Top": -30.497691585539144,
+        "Width": 144.0,
+        "Height": 200.0,
+        "FontSize": 24.0,
+        "InitialTop": 65.502308414460856,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 86.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "84fda1b071754d409d9617789743ea9c",
+        "Title": "voice Command _v2",
+        "Nodes": [
+          "f320b92c34df4e33b9443413e1a18e3b",
+          "d8c0d3d8626f4e30b3bb0eecfd34f812",
+          "3bd1ca02ea3f453e81bc3e718e2df7cc"
+        ],
+        "Left": 242.16398126185328,
+        "Top": 256.82733702057737,
+        "Width": 792.07471397882182,
+        "Height": 157.7700657684797,
+        "FontSize": 36.0,
+        "InitialTop": 309.82733702057737,
+        "InitialHeight": 146.33145984137417,
+        "TextblockHeight": 43.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "6ab307acfa2947888845799fe01a1b22",
+        "Title": "with winform v1",
+        "Nodes": [
+          "a3f04d4d5cb6465f85ac968e2154cd03",
+          "d5dc9e4e5e4144c0a6bb762cbfc28325"
+        ],
+        "Left": 283.09484020633334,
+        "Top": 493.03002353668285,
+        "Width": 580.3795881572612,
+        "Height": 157.0,
+        "FontSize": 36.0,
+        "InitialTop": 546.03002353668285,
+        "InitialHeight": 149.91756567922323,
+        "TextblockHeight": 43.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "b8eaa531acd14e6eb0e5fa96b79e48c1",
+        "Title": "",
+        "Nodes": [
+          "f4e58cedea1b43e393409c2e68fc87e8",
+          "b7de64a1c7a6427c86d6dff3d862cc19"
+        ],
+        "Left": 521.52752355751079,
+        "Top": 914.031634141623,
+        "Width": 737.29939725144538,
+        "Height": 473.32062488067641,
+        "FontSize": 36.0,
+        "InitialTop": 967.031634141623,
+        "InitialHeight": 147.32062488067641,
+        "TextblockHeight": 43.0,
+        "Background": "#FF71C6A8"
+      }
+    ],
+    "X": -347.65310961654393,
+    "Y": -633.35234791334244,
+    "Zoom": 0.845654935354981
+  }
+}
