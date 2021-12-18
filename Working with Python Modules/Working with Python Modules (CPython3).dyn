@@ -1,0 +1,237 @@
+{
+  "Uuid": "dc8ee6a5-7537-4ab5-a125-cb9fb0dd18c3",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "Working with Python Modules (CPython3)",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# https://stackoverflow.com/questions/65009309/dynamically-import-module-from-memory-in-python-3-using-hooks\r\nimport sys\r\nimport clr\r\nimport importlib\r\nfrom importlib.abc import Loader, MetaPathFinder\r\nimport types\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\nclass StringLoader(Loader):\r\n\r\n    def __init__(self, modules):\r\n        self._modules = modules\r\n\r\n    def has_module(self, fullname):\r\n        return (fullname in self._modules)\r\n\r\n    def create_module(self, spec):\r\n        if self.has_module(spec.name):\r\n            module = types.ModuleType(spec.name)\r\n            return self._modules[spec.name]()\r\n\r\n    def exec_module(self, module):\r\n        pass\r\n\r\n\r\nclass StringFinder(MetaPathFinder):\r\n\r\n    def __init__(self, loader):\r\n        self._loader = loader\r\n\r\n    def find_spec(self, fullname, path, target=None):\r\n        if self._loader.has_module(fullname):\r\n            return importlib.machinery.ModuleSpec(fullname, self._loader)\r\n\r\nclass Foo():\r\n    guid = \"a8c3aa76-f731-4086-ae08-8cb41464e425\"\r\n    def __init__(self):\r\n        self.args = [chr(i) for i in range(97, 103)]\r\n        \r\n    def __name__(self):\r\n        return \"Foo\"\r\n        \r\n    def bar(self):\r\n        return ', '.join(self.args)\r\n        \r\n    def Test(self):\r\n        return Point.ByCoordinates(1,2,-3)\r\n\r\nmoduleName = Foo.__name__\r\n# MAKE A DICT OF MODULES\r\nmodules = {moduleName: Foo}\r\n# PURGE PREVIOUS MODULES\r\nfor i in range(10):\r\n    for idx, m in enumerate(sys.meta_path):\r\n        if hasattr(m, \"_loader\") and hasattr(m._loader, \"_modules\") and moduleName in m._loader._modules:\r\n            sys.meta_path.pop(idx)\r\n            break\r\n# DEL PREVIOUS MODULE IN sys.modules\r\nif moduleName in sys.modules:\r\n    del sys.modules[moduleName]\r\n# IMPORT MODULE IN sys.meta_path\r\nfinder = StringFinder(StringLoader(modules))\r\nsys.meta_path.append(finder)\r\nimport Foo\r\n####################################################################################\r\n##### NOW MODULE Foo IS ACCESSIBLE IN ALL OTHER PYTHON NODES JUST NEED IMPORT ######\r\n####################################################################################\r\n\r\nOUT = 0",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "9af0a0bad64b4b09adea16c09115c32a",
+      "Inputs": [
+        {
+          "Id": "8c8193e4e777452cb5f6af88e0881c9a",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "c1702462235b4287a63292fedeabf606",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Charger les bibliothèques DesignScript et Standard Python\r\nimport sys\r\nimport clr\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\nimport Foo\r\nimport Foo2\r\npta = Foo.Test()\r\nptb = Foo2.Test()\r\nOUT = Line.ByStartPointEndPoint(pta, ptb), Foo.bar()",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "9d83b69782494e76bfb69db80277d301",
+      "Inputs": [
+        {
+          "Id": "2cc504bd656d4e3793f4f83a8ab9c785",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "be7801f67de54d8cbb0cb11ddc592be2",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "5441a7dcf5b8468aa6f6634240d60fd1",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# https://stackoverflow.com/questions/65009309/dynamically-import-module-from-memory-in-python-3-using-hooks\r\nimport sys\r\nimport clr\r\nimport importlib\r\nfrom importlib.abc import Loader, MetaPathFinder\r\nimport types\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\n\r\nclass StringLoader(Loader):\r\n\r\n    def __init__(self, modules):\r\n        self._modules = modules\r\n\r\n    def has_module(self, fullname):\r\n        return (fullname in self._modules)\r\n\r\n    def create_module(self, spec):\r\n        if self.has_module(spec.name):\r\n            module = types.ModuleType(spec.name)\r\n            return self._modules[spec.name]()\r\n\r\n    def exec_module(self, module):\r\n        pass\r\n\r\n\r\nclass StringFinder(MetaPathFinder):\r\n\r\n    def __init__(self, loader):\r\n        self._loader = loader\r\n\r\n    def find_spec(self, fullname, path, target=None):\r\n        if self._loader.has_module(fullname):\r\n            #self.moduleName = fullname\r\n            return importlib.machinery.ModuleSpec(fullname, self._loader)\r\n\r\nclass Foo2():\r\n    \"\"\"\r\n    This a test\r\n    \"\"\"\r\n    guid = \"a8c3aa76-f731-4086-ae08-8cb41464e425\"\r\n    def __init__(self):\r\n        self.args = [chr(i) for i in range(105, 115)]\r\n        \r\n    def __name__(self):\r\n        return \"Foo2\"\r\n        \r\n    def bar(self):\r\n        \"\"\"\r\n        bar doc\r\n        \"\"\"\r\n        return ', '.join(self.args)\r\n    def Test(self):\r\n        \"\"\"\r\n        Test doc\r\n        \"\"\"\r\n        return Point.ByCoordinates(12,12,12)\r\n\r\nmoduleName = Foo2.__name__\r\nmodules = {moduleName: Foo2}\r\nfor i in range(10):\r\n    for idx, m in enumerate(sys.meta_path):\r\n        if hasattr(m, \"_loader\") and hasattr(m._loader, \"_modules\") and moduleName in m._loader._modules:\r\n            sys.meta_path.pop(idx)\r\n            break\r\nfinder = StringFinder(StringLoader(modules))\r\nsys.meta_path.append(finder)\r\nif moduleName in sys.modules:\r\n    del sys.modules[moduleName]\r\nimport Foo2\r\n\r\n\r\nOUT = 0",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "1b87ccc987344d18b01952b8323df480",
+      "Inputs": [
+        {
+          "Id": "6fb68847cca2446cb918c2c62cb89e98",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "a3da593719b74946a8290ee0f3fe18e6",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "c1702462235b4287a63292fedeabf606",
+      "End": "2cc504bd656d4e3793f4f83a8ab9c785",
+      "Id": "0368658982a84b7d92b7242c772aa2e0",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "a3da593719b74946a8290ee0f3fe18e6",
+      "End": "be7801f67de54d8cbb0cb11ddc592be2",
+      "Id": "ad44dd6acc024a2abbdf83a002f4c381",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "2.13",
+      "Data": {
+        "Propriété personnalisée 1": ""
+      }
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "Aucun",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.13.0.3485",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Aperçu en arrière-plan",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Name": "Python Script | Foo",
+        "ShowGeometry": true,
+        "Id": "9af0a0bad64b4b09adea16c09115c32a",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 247.37636705431646,
+        "Y": -626.67698824264176
+      },
+      {
+        "Name": "Python Script | main",
+        "ShowGeometry": true,
+        "Id": "9d83b69782494e76bfb69db80277d301",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 869.51755875228582,
+        "Y": -632.75908064975965
+      },
+      {
+        "Name": "Python Script | Foo2",
+        "ShowGeometry": true,
+        "Id": "1b87ccc987344d18b01952b8323df480",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 237.24892146908758,
+        "Y": -405.16150702084565
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "1b51e390e9a74d69b333aa516c5e058c",
+        "Title": "Test1",
+        "DescriptionText": "<Double-cliquer ici pour modifier la description du groupe>",
+        "IsExpanded": true,
+        "WidthAdjustment": 0.0,
+        "HeightAdjustment": 0.0,
+        "Nodes": [
+          "9af0a0bad64b4b09adea16c09115c32a",
+          "9d83b69782494e76bfb69db80277d301",
+          "1b87ccc987344d18b01952b8323df480"
+        ],
+        "HasNestedGroups": false,
+        "Left": 227.24892146908758,
+        "Top": -705.75908064975965,
+        "Width": 879.26863728319825,
+        "Height": 432.597573628914,
+        "FontSize": 36.0,
+        "InitialTop": -632.75908064975965,
+        "InitialHeight": 317.228146941943,
+        "TextblockHeight": 63.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": 178.1020240877906,
+    "Y": 699.84997841495669,
+    "Zoom": 0.83897733905561322
+  }
+}
