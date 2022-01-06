@@ -1,0 +1,649 @@
+{
+  "Uuid": "6df478ca-30a1-417e-b2ce-132a756d15a3",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "Schedule to DataFrame_v3",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "DSRevitNodesUI.Views, DSRevitNodesUI",
+      "SelectedIndex": 146,
+      "SelectedString": "Puiss. Eclairage Surfacique Lv1",
+      "NodeType": "ExtensionNode",
+      "Id": "ef8018c919aa420b930ebbbf0618ab03",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f411814d0c4145198e154ad95d82e369",
+          "Name": "Views",
+          "Description": "The selected Views",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Toutes les vues disponibles dans le document actif."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nimport sys\r\nimport re\r\nimport System\r\n\r\nWrapDFrame = IN[0] # import class\r\n\r\nviewschA = UnwrapElement(IN[1])\r\nviewschB = UnwrapElement(IN[2])\r\nexecute = IN[3]\r\nif execute: \r\n    # create DataFrame 1\r\n    objdfA = WrapDFrame(viewschA)\r\n    # create DataFrame 2\r\n    objdfB = WrapDFrame(viewschB)\r\n    # concat objects with same 'append' method of Pandas.DataFrame\r\n    objdfC = objdfA.Append(objdfB, ignore_index = False, sort = False)\r\n    # remove NaN values\r\n    dfC = objdfC.UnwrapDFrame.dropna()\r\n    # change Index with space Number\r\n    dfC = dfC.set_index(\"Numéro\")\r\n    # add column \r\n    dfC[\"DifferenceRT/Réelle\"] = dfC.iloc[:, -1] - dfC.iloc[:, -2]\r\n    # Create an new instance of WrapDFrame with describe by Name of Space\r\n    objdfD = WrapDFrame(dfC.groupby([\"Type d'espace\"]).describe().sort_values(by=('DifferenceRT/Réelle', 'min')))\r\n    # view in Html\r\n    objdfD.ToHTML()\r\n    OUT = objdfD\r\n    \r\n",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "6fb8625dd8934a17833e6ce78c1c0c63",
+      "Inputs": [
+        {
+          "Id": "a49bef6075cb440e806e3d8abdcbc232",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "9fe5555951bb4f4dbb0f0ae055e6142a",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d48f6ca3c09148b5bdd0788902c70b87",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "518c4c28d1704699b1169eb908ffa64d",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "4d282eab8e53473eb92a2e9d715a66fb",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "DSRevitNodesUI.Views, DSRevitNodesUI",
+      "SelectedIndex": 147,
+      "SelectedString": "Puiss. Eclairage Surfacique Lv2",
+      "NodeType": "ExtensionNode",
+      "Id": "cb1ff6f5d4fa49a38fcfa19db4da76ae",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "986e215be45242898fb3ad8026053376",
+          "Name": "Views",
+          "Description": "The selected Views",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Toutes les vues disponibles dans le document actif."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nimport sys\r\nimport re\r\nimport System\r\nmy_path = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)\r\n\r\nreDir = System.IO.DirectoryInfo(re.__file__)\r\npath_py3_lib = reDir.Parent.Parent.FullName\r\nsys.path.append(path_py3_lib + r'\\Lib\\site-packages')\r\nimport pandas as pd\r\nimport openpyxl\r\n\r\nobjdfD = IN[0]\r\nexecute = IN[1]\r\nif objdfD is not None and execute:\r\n    objdfD.UnwrapDFrame.to_excel(my_path + \"\\\\export_dataframe.xlsx\")\r\n    System.Diagnostics.Process.Start(my_path + \"\\\\export_dataframe.xlsx\")",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "cfc71ad8bc7c4a26b33273220ab920de",
+      "Inputs": [
+        {
+          "Id": "bb7e5d0cced6420b869cfa9be8d3dff4",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "0a1872b36f4f4e39b4389dbd6fe04287",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "5a9401e512c545f0906586d1bef23878",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nimport sys\r\nimport re\r\nimport System\r\n           \r\nWrapDFrame = IN[0] # import class          \r\n\r\nviewschAllLvl = UnwrapElement(IN[1])\r\nexecute = IN[2]\r\nif execute: \r\n    # create DataFrame 1\r\n    objdfA = WrapDFrame(viewschAllLvl)\r\n    # remove nan values\r\n    dfC = objdfA.UnwrapDFrame.dropna()\r\n    # change Index with space Number\r\n    dfC = dfC.set_index(\"Numéro\")\r\n    # Get only Level 1 and Level 2\r\n    dfC = dfC[(dfC[\"Niveau\"] == \"Level 1\") | (dfC[\"Niveau\"] == \"Level 2\")]\r\n    # add column \r\n    dfC[\"DifferenceRT/Réelle\"] = dfC.iloc[:, -1] - dfC.iloc[:, -2]\r\n    # Create an new instance of WrapDFrame with describe by Name of Space\r\n    objdfD = WrapDFrame(dfC.groupby([\"Type d'espace\"]).describe().sort_values(by=('DifferenceRT/Réelle', 'min')))\r\n    # view in Html\r\n    objdfD.ToHTML()\r\n    OUT = objdfD\r\n",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "10e706ab572f4433a47a4518e6392d81",
+      "Inputs": [
+        {
+          "Id": "47975528a696432bbc69c5d4536c840f",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "84761a7e15724a82b9f0a43b3ff42fb4",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d42c7ee137f44648b9153768eb9e48cc",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "d8c2f6b48adb421c9f1ff99a47912e90",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "DSRevitNodesUI.Views, DSRevitNodesUI",
+      "SelectedIndex": 144,
+      "SelectedString": "Puiss. Eclairage Surfacique ALL",
+      "NodeType": "ExtensionNode",
+      "Id": "18c64afe6c784dbd93b52836ea555d37",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "565da20fe2d54687a5a234ff9c504925",
+          "Name": "Views",
+          "Description": "Views sélectionné",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Toutes les vues disponibles dans le document actif."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nimport sys\r\nimport re\r\nimport System\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry as DS\r\n\r\n#import Revit API\r\nclr.AddReference('RevitAPI')\r\nimport Autodesk\r\nfrom Autodesk.Revit.DB import *\r\nimport Autodesk.Revit.DB as DB\r\n\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\n\r\nmy_path = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)\r\n\r\nreDir = System.IO.DirectoryInfo(re.__file__)\r\npath_py3_lib = reDir.Parent.Parent.FullName\r\nsys.path.append(path_py3_lib + r'\\Lib\\site-packages')\r\nimport pandas as pd\r\nimport numpy as np\r\nfrom typing import Union\r\nimport webbrowser\r\nimport codecs\r\nfrom bs4 import BeautifulSoup as bs\r\n\r\nclass WrapDFrame():\r\n    dictUnitValue = {}\r\n    def __init__(self, data: Union[DB.ViewSchedule , pd.DataFrame]):\r\n        self.lstError = []\r\n        if isinstance(data, pd.DataFrame):\r\n            self._df = data\r\n        elif isinstance(data, pd.Series):\r\n            self._df = data.to_frame()\r\n        else:\r\n            self._df = self.__getDF_From_View(data)\r\n    #\r\n    def __getDF_From_View(self, data):     \r\n        \"\"\"\r\n        convert Schedule to DataFrame (private method)\r\n        \"\"\"        \r\n        viewschedule = data\r\n        outvalue = []   \r\n        if viewschedule.ViewType == ViewType.PanelSchedule:\r\n            tabledata = viewschedule.GetSectionData(SectionType.Body)\r\n        else:\r\n            tabledata = viewschedule.GetTableData().GetSectionData(SectionType.Body) \r\n        #            \r\n        paraSchNames = []\r\n        nbrCol = tabledata.NumberOfColumns\r\n        nbrRow = tabledata.NumberOfRows \r\n        for r in range(nbrRow):\r\n            if r == 0:\r\n                for c in range(nbrCol):\r\n                    paraSchNames.append(viewschedule.GetCellText(SectionType.Body, r, c))\r\n            else:\r\n                temp = []\r\n                unit_header = []\r\n                #get values by Rows\r\n                for c in range(nbrCol): \r\n                    unitType = tabledata.GetCellSpec(r,c)\r\n                    is_unitType = True if len(unitType.TypeId) > 0 else False\r\n                    #\r\n                    if tabledata.GetCellType(r,c) == CellType.Text or tabledata.GetCellType(r,c) == CellType.ParameterText:\r\n                        valueCell = tabledata.GetCellText(r,c)\r\n                        valueCell, unitstr = self.__to_Float(valueCell) if is_unitType else (valueCell, \"\")\r\n                        temp.append(valueCell)\r\n                        unit_header.append(unitstr)\r\n                    #\r\n                    elif tabledata.GetCellType(r,c) == CellType.Parameter:  \r\n                        try:\r\n                            valueCell = viewschedule.GetParamValue(SectionType.Body, r , c )\r\n                            valueCell, unitstr = self.__to_Float(valueCell) if is_unitType else (valueCell, \"\")\r\n                            temp.append(valueCell)\r\n                            unit_header.append(unitstr)\r\n                        except:\r\n                            valueCell = viewschedule.GetCellText(SectionType.Body, r , c )\r\n                            valueCell, unitstr  = self.__to_Float(valueCell) if is_unitType else (valueCell, \"\")\r\n                            temp.append(valueCell)  \r\n                            unit_header.append(unitstr)                            \r\n                    #      \r\n                    elif tabledata.GetCellType(r,c) == CellType.CalculatedValue:\r\n                        valueCell = tabledata.GetCellCalculatedValue(r,c)\r\n                        valueCell, unitstr  = self.__to_Float(valueCell) if is_unitType else (valueCell, \"\")\r\n                        temp.append(valueCell) \r\n                        unit_header.append(unitstr)\r\n                if len(temp) >= 1:  \r\n                    # replace empty value by NaN\r\n                    temp = [x if x != \"\" else np.nan for x in temp]\r\n                    outvalue.append(temp)  \r\n                    \r\n        df = pd.DataFrame(data = outvalue, columns= paraSchNames)   \r\n        for nameCol, nameUnit in zip(df.columns, unit_header):\r\n            self.__class__.dictUnitValue[nameCol] = nameUnit\r\n        # remove blank line\r\n        df = df.drop(0, axis = 0)    \r\n        return df            \r\n\r\n        \r\n    @property    \r\n    def UnwrapDFrame(self):\r\n        \"\"\"\r\n        return the unwrap Panda DataFrame\r\n        \"\"\"\r\n        return self._df\r\n\r\n    def Append(self, *args, **kwargs):\r\n        \"\"\"\r\n        method to call the 'append' DataFrame method to concat 2 DataFrames\r\n        \"\"\"\r\n        if isinstance(args[0], WrapDFrame):\r\n            # uwrap fist item\r\n            args = list(args)\r\n            args[0] = args[0].UnwrapDFrame\r\n            args = tuple(args)\r\n        new_df = self.UnwrapDFrame.append(args, kwargs)\r\n        return WrapDFrame(new_df)\r\n        \r\n        \r\n    def ToHTML(self):\r\n        \"\"\"\r\n        convert DataFrame to Html and open it \r\n        \"\"\"\r\n        filename = my_path + '\\\\htmlDataFrame.html'\r\n        htmlDf = \"\"\"\\\r\n        <html>\r\n        <head>\r\n        <style> \r\n          table, th, td {{font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}}\r\n          th, td {{padding: 5px;}}\r\n          tr:nth-child(even) {{background: #E0E0E0;}}\r\n          tr:hover {{background: silver; cursor: pointer;}}\r\n        </style>\r\n        </head>\r\n          <body>\r\n            {0}\r\n          </body>\r\n        </html>\r\n        \"\"\".format(self.UnwrapDFrame.to_html())   \r\n        #\r\n        # add unit in tooltip with bs4\r\n        soup = bs(htmlDf, 'html.parser')\r\n        tables = soup.find_all('table')\r\n        for table in tables:\r\n            rows = table.find_all('tr')\r\n            row = rows[0]\r\n            cols = row.find_all('th')\r\n            for ele in cols:\r\n                if ele.string is not None:\r\n                    unit = self.__class__.dictUnitValue.get(ele.string.strip())\r\n                    if unit is not None:\r\n                        print(\"pass\")\r\n                        try:\r\n                           ele[\"title\"] = unit\r\n                        except:\r\n                            import traceback\r\n                            self.lstError.append([ele.string, traceback.format_exc()])\r\n        htmlDf = soup.prettify()\r\n        #\r\n        #with open(filename, 'w') as f:\r\n        with codecs.open(filename, \"w\", encoding=\"utf-8\") as f:\r\n            f.write( htmlDf)\r\n        webbrowser.open_new_tab(filename)            \r\n     \r\n    def __to_Float(self, x):\r\n        \"\"\"\r\n        convert value cell to float and get suffix unit\r\n        \"\"\"\r\n        sgA = re.match(r'([+-]?\\d*.?\\d+)\\s(.+)', x)\r\n        sgB = re.match(r'([+-]?\\d*.?\\d+)', x)\r\n        if sgA is not None:\r\n            return float(sgA.group(1).replace(',','.')), sgA.group(2)\r\n        elif sgB is not None:\r\n            return float(sgB.group(1).replace(',','.')), \"\"\r\n        else:\r\n            return x, \"\"\r\n\r\nOUT = WrapDFrame\r\n",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "2515ed767854487ca38f3b18bb72059e",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c1763da808344e6e875e60ba9b03eaac",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "3c66003ddfcb493ba8b115d621b767de",
+      "Inputs": [
+        {
+          "Id": "d75b15f6dd804494a67127d749c4e802",
+          "Name": "",
+          "Description": "Afficher la sortie de ce noeud",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "3b027f3a08434984aa055584eefac311",
+          "Name": "",
+          "Description": "Sortie du noeud",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualiser la sortie du noeud"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "f8ebcf3e206249aca01322eaa1033ecb",
+      "Inputs": [
+        {
+          "Id": "bc2c111d5bee4e5b824b5260114f114d",
+          "Name": "",
+          "Description": "Afficher la sortie de ce noeud",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "4dcc1b3f08054d9d8536f35941302aec",
+          "Name": "",
+          "Description": "Sortie du noeud",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualiser la sortie du noeud"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "58a6ff01790e40af8234db7b7c0f7b73",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6ca69143ede54ee9ad46914ff08729f2",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélection entre True et False."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "b485163dfe094c488e69eeec3bafc3db",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "eeaa4160c2ed42b8929b5c27b9a302f9",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélection entre True et False."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "38ccc41758a84076a9561fbe886b28d9",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "0fbced80a7974e41814f6ddf15169b4e",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélection entre True et False."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "f411814d0c4145198e154ad95d82e369",
+      "End": "9fe5555951bb4f4dbb0f0ae055e6142a",
+      "Id": "3e54e5cfc2914f718765cccf5569392c"
+    },
+    {
+      "Start": "986e215be45242898fb3ad8026053376",
+      "End": "d48f6ca3c09148b5bdd0788902c70b87",
+      "Id": "81a8ca5e107c4608b49d85e4f90ed50a"
+    },
+    {
+      "Start": "d8c2f6b48adb421c9f1ff99a47912e90",
+      "End": "d75b15f6dd804494a67127d749c4e802",
+      "Id": "7c8e4100040e40e6ab51ffe9dc1f5646"
+    },
+    {
+      "Start": "565da20fe2d54687a5a234ff9c504925",
+      "End": "84761a7e15724a82b9f0a43b3ff42fb4",
+      "Id": "dacd1eef65334738ba56abe44a9cad7c"
+    },
+    {
+      "Start": "c1763da808344e6e875e60ba9b03eaac",
+      "End": "bc2c111d5bee4e5b824b5260114f114d",
+      "Id": "ed73f5e9dcf0477f8e1b9fd2c44bd6f6"
+    },
+    {
+      "Start": "3b027f3a08434984aa055584eefac311",
+      "End": "bb7e5d0cced6420b869cfa9be8d3dff4",
+      "Id": "db6457c068f146bc846c67379c1f58c6"
+    },
+    {
+      "Start": "4dcc1b3f08054d9d8536f35941302aec",
+      "End": "a49bef6075cb440e806e3d8abdcbc232",
+      "Id": "364538100986468e88230c1a013f78d0"
+    },
+    {
+      "Start": "4dcc1b3f08054d9d8536f35941302aec",
+      "End": "47975528a696432bbc69c5d4536c840f",
+      "Id": "82323c53d05f4347b02db1d38c615618"
+    },
+    {
+      "Start": "6ca69143ede54ee9ad46914ff08729f2",
+      "End": "518c4c28d1704699b1169eb908ffa64d",
+      "Id": "c4442a74e46c434ba0f02cf9ba6ba08d"
+    },
+    {
+      "Start": "eeaa4160c2ed42b8929b5c27b9a302f9",
+      "End": "d42c7ee137f44648b9153768eb9e48cc",
+      "Id": "88e9480268484bcf874a35596e5489df"
+    },
+    {
+      "Start": "0fbced80a7974e41814f6ddf15169b4e",
+      "End": "0a1872b36f4f4e39b4389dbd6fe04287",
+      "Id": "53528108283e4bd4a596db10936b258e"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "2.12",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "Aucun",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.12.0.5650",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Aperçu en arrière-plan",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Space Schedule Level 1",
+        "Id": "ef8018c919aa420b930ebbbf0618ab03",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 192.74248654406153,
+        "Y": 306.60020693818842
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "6fb8625dd8934a17833e6ce78c1c0c63",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 645.42706451672768,
+        "Y": 249.37071131230738
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Space Schedule Level 2",
+        "Id": "cb1ff6f5d4fa49a38fcfa19db4da76ae",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 199.11413683510204,
+        "Y": 410.1361560003524
+      },
+      {
+        "ShowGeometry": false,
+        "Name": "Python Script",
+        "Id": "cfc71ad8bc7c4a26b33273220ab920de",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 891.35384844360146,
+        "Y": 710.7653448368028
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "10e706ab572f4433a47a4518e6392d81",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 121.30140168664809,
+        "Y": 705.05304617624836
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Views",
+        "Id": "18c64afe6c784dbd93b52836ea555d37",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -380.42979152432076,
+        "Y": 741.958061797127
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "2515ed767854487ca38f3b18bb72059e",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -304.15825466553031,
+        "Y": 195.31459505746164
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "3c66003ddfcb493ba8b115d621b767de",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 403.74684995653774,
+        "Y": 707.23594482775763
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "f8ebcf3e206249aca01322eaa1033ecb",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -148.23040682528421,
+        "Y": 194.42544485374998
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Excecute Script?",
+        "Id": "58a6ff01790e40af8234db7b7c0f7b73",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 260.37847608409231,
+        "Y": 538.7948046139843
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Excecute Script?",
+        "Id": "b485163dfe094c488e69eeec3bafc3db",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -113.03073348416274,
+        "Y": 848.0886096815268
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Excecute Script?",
+        "Id": "38ccc41758a84076a9561fbe886b28d9",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 696.79031223289257,
+        "Y": 852.35777870252934
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "ead51db70060436c96cdc7baa4a5c59b",
+        "Title": "Exemple 2 avec un Filtre OU pour avoir les Niveaux 1 et 2",
+        "Nodes": [
+          "10e706ab572f4433a47a4518e6392d81",
+          "18c64afe6c784dbd93b52836ea555d37",
+          "3c66003ddfcb493ba8b115d621b767de",
+          "cfc71ad8bc7c4a26b33273220ab920de",
+          "b485163dfe094c488e69eeec3bafc3db",
+          "38ccc41758a84076a9561fbe886b28d9"
+        ],
+        "Left": -390.42979152432076,
+        "Top": 666.05304617624836,
+        "Width": 1415.7836399679222,
+        "Height": 319.18289865150928,
+        "FontSize": 24.0,
+        "InitialTop": 705.05304617624836,
+        "InitialHeight": 292.304732526281,
+        "TextblockHeight": 29.0,
+        "Background": "#FFFF7BAC"
+      },
+      {
+        "Id": "2669a45386954f6593ec52e01414403b",
+        "Title": "Exemple 1 avec concaténation des Nomenclatures pour avoir les Niveaux 1 et 2",
+        "Nodes": [
+          "ef8018c919aa420b930ebbbf0618ab03",
+          "6fb8625dd8934a17833e6ce78c1c0c63",
+          "cb1ff6f5d4fa49a38fcfa19db4da76ae",
+          "58a6ff01790e40af8234db7b7c0f7b73"
+        ],
+        "Left": 182.74248654406153,
+        "Top": 181.37071131230738,
+        "Width": 596.68457797266615,
+        "Height": 425.42409330167692,
+        "FontSize": 24.0,
+        "InitialTop": 249.37071131230738,
+        "InitialHeight": 434.42409330167692,
+        "TextblockHeight": 58.0,
+        "Background": "#FF90EE90"
+      },
+      {
+        "Id": "393140dda3314733ae709fa378b79057",
+        "Title": "classe WrapDFrame",
+        "Nodes": [
+          "2515ed767854487ca38f3b18bb72059e",
+          "f8ebcf3e206249aca01322eaa1033ecb"
+        ],
+        "Left": -314.15825466553031,
+        "Top": 148.42544485374998,
+        "Width": 385.9278478402461,
+        "Height": 324.0,
+        "FontSize": 30.0,
+        "InitialTop": 194.42544485374998,
+        "InitialHeight": 145.88915020371167,
+        "TextblockHeight": 36.0,
+        "Background": "#FF48B9FF"
+      }
+    ],
+    "X": 374.25592162670824,
+    "Y": -144.4824269386969,
+    "Zoom": 0.77269499588681345
+  }
+}
