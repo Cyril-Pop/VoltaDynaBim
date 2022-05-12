@@ -75,7 +75,7 @@ bbxElem = elem.get_BoundingBox(None)
 minUV = bbxUV.Min
 maxUV = bbxUV.Max
 midleUV = (bbxUV.Min + bbxUV.Max) * 0.5
-marginCropbox = UV(margin_c, margin_c) # margin_c -&gt; 0.4
+marginCropbox = UV(margin_c, margin_c) # margin_c -> 0.4
 # calculate minUV and maxUV for section
 min_uv = minUV - midleUV - marginCropbox
 max_uv = maxUV - midleUV + marginCropbox	
@@ -106,8 +106,8 @@ v.get_Parameter(BuiltInParameter.VIEWER_BOUND_FAR_CLIPPING).Set(1)
 #
 # fix some outline on vertical and horizontal view section 
 crsm = v.GetCropRegionShapeManager()
-# fix with horizontal faces -&gt; use face_curvLoop with offset
-if abs(faceNormal.Z) &gt; 0.99:
+# fix with horizontal faces -> use face_curvLoop with offset
+if abs(faceNormal.Z) > 0.99:
 	face_curvLoop = face.GetEdgesAsCurveLoops()[0]
 	curveloop_shape = CurveLoop.CreateViaTransform(face_curvLoop, tf1)
 	curveloop_shape = CurveLoop.CreateViaOffset(curveloop_shape, 1.02, v.ViewDirection)
@@ -115,12 +115,12 @@ if abs(faceNormal.Z) &gt; 0.99:
 		
 # check with vertical faces
 # rotate 90 degre the 'outline curveloop shape' if any curve of 'curveloop shape' are not near to maxptface point
-elif abs(faceNormal.Z) &lt; 0.01:
+elif abs(faceNormal.Z) < 0.01:
 	curveloop_shape = crsm.GetCropShape()[0]
 	tf3 = Transform.CreateRotationAtPoint(faceNormal, System.Math.PI * 0.5, midpoint)
 	candiate_curveloop_shape = CurveLoop.CreateViaTransform(curveloop_shape, tf3)
 	maxZCurveLoop = max(c.GetEndPoint(i).Z for c in curveloop_shape for i in range(2))
-	if not margin_c - 0.01 &lt;= abs(maxZCurveLoop - maxptZface.Z) &lt; margin_c + 0.1:
+	if not margin_c - 0.01 <= abs(maxZCurveLoop - maxptZface.Z) < margin_c + 0.1:
 		crsm.SetCropShape(candiate_curveloop_shape)
 		
 else:
