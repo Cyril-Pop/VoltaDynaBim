@@ -1,0 +1,489 @@
+{
+  "Uuid": "db251000-b2dd-4c17-b701-5bdbb81651ac",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "custom alphashape_v0.6 for blog",
+  "ElementResolver": {
+    "ResolutionMap": {
+      "Point": {
+        "Key": "Autodesk.DesignScript.Geometry.Point",
+        "Value": "ProtoGeometry.dll"
+      },
+      "Math": {
+        "Key": "DSCore.Math",
+        "Value": "DSCoreNodes.dll"
+      },
+      "Delaunay": {
+        "Key": "Tessellation.Delaunay",
+        "Value": "Tessellation.dll"
+      }
+    }
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "pts = Point.ByCoordinates(Math.RandomList(800, 10, 80, 8)*50, Math.RandomList(800, 10, 80, 20)*50, 0);",
+      "Id": "94a4f3c86f4049f69844e9dd4a142429",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "43cc46a998684e1eac1902ca720c2bcd",
+          "Name": "",
+          "Description": "pts",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Permet de créer le code DesignScript directement"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "pts = Point.ByCoordinates(Math.RandomList(50, -30, 10, 8)*50, Math.RandomList(50, 50, 60, 20)*50, 0);",
+      "Id": "9a03c58ed7c14d89a8ea6884377d7a75",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6c29ade1ce0c4836819888d0d621d0a2",
+          "Name": "",
+          "Description": "pts",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Permet de créer le code DesignScript directement"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSVarArgFunction, DynamoCore",
+      "FunctionSignature": "DSCore.List.Join@var[]..[]",
+      "FunctionType": "VariableArgument",
+      "NodeType": "FunctionNode",
+      "Id": "45e30cff6d204ea99093d5e879f6f9f7",
+      "Inputs": [
+        {
+          "Id": "ef71c9d085ba4eeb807d7084b8fdb995",
+          "Name": "list0",
+          "Description": "Listes à fusionner dans une liste unique.\n\nvar[]..[]",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "6db2415c6bc5404ba89f574955ac1c3b",
+          "Name": "list1",
+          "Description": "var[]..[]",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "cd34cf5f2dc74af4a43482c611963061",
+          "Name": "list2",
+          "Description": "var[]..[]",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "5e613e346ac44cffbbefdbe8881b1bfe",
+          "Name": "list",
+          "Description": "Liste finale.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Concatène toutes les listes indiquées dans une liste unique.\n\nList.Join (lists: var[]..[]): var[]..[]"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import sys\r\nimport clr\r\nimport System\r\nfrom System.Collections.Generic import List\r\n\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry as DS\r\n\r\nclr.AddReference('Tessellation')\r\nimport Tessellation as TS\r\nimport math\r\n\r\n\r\ndef convex_hull_graham(lstPtx):\r\n\t\"\"\"\r\n\t-typing: \r\n\t\t(lstPtx : Union[list, List[DS.Point]]) -> List[DS.Curve]\r\n\t-description:\r\n\t\tReturns points on convex hull in CCW order according to Graham's scan algorithm. \r\n\t\tBy Tom Switzer <thomas.switzer@gmail.com>.\r\n\t-Parameters:\r\n\t\tlstPtx : list of points\r\n\t-Return:\r\n\t\tlist of Curves\r\n\t\"\"\"\r\n\t# sub fuctions\r\n\tdef toPts(ptVals):\r\n\t\treturn Point.ByCoordinates(ptVals[0],ptVals[1],ptVals[2])\r\n\t\t\r\n\tdef create_shape(lstpts):\r\n\t\tcrvs = []\r\n\t\tfor idx, p in enumerate(lstpts):\r\n\t\t\tif idx > 0:\r\n\t\t\t\tcrvs.append(Line.ByStartPointEndPoint(lstpts[idx - 1], p))\r\n\t\treturn crvs\r\n\t\t\r\n\tdef cmp(a, b):\r\n\t\treturn (a > b) - (a < b)\r\n\t\r\n\tdef turn(p, q, r):\r\n\t\treturn cmp((q[0] - p[0])*(r[1] - p[1]) - (r[0] - p[0])*(q[1] - p[1]), 0)\r\n\t\r\n\tdef _keep_left(hull, r):\r\n\t\twhile len(hull) > 1 and turn(hull[-2], hull[-1], r) != TURN_LEFT:\r\n\t\t\thull.pop()\r\n\t\tif not len(hull) or hull[-1] != r:\r\n\t\t\thull.append(r)\r\n\t\treturn hull\r\n\t\t\r\n\t# main function\r\n\t# variables\r\n\tTURN_LEFT, TURN_RIGHT, TURN_NONE = (1, -1, 0)\r\n\t#\r\n\tlstPtx = [[pt.X,pt.Y,pt.Z] for pt in lstPtx]\t\r\n\tlstPtx = sorted(lstPtx)\r\n\tl = reduce(_keep_left, lstPtx, [])\r\n\tu = reduce(_keep_left, reversed(lstPtx), [])\r\n\tlstPtx = l.extend(u[i] for i in range(1, len(u) - 1)) or l\r\n\tlstPtx = [toPts(p) for p in lstPtx]\r\n\treturn List[DS.Curve](create_shape(lstPtx))\r\n\r\ndef percentile(data, perc):\r\n\tsize = len(data)\r\n\treturn sorted(data)[int(math.ceil((size * perc) / 100)) - 1]\r\n\r\n\r\ndef get_near_distances_points(lstPtx):\r\n\t\"\"\"\r\n\t-typing: \r\n\t\t(lstPtx : Union[list, List[DS.Point]]) -> list\r\n\t-description:\r\n\t\titerative  function to order points by near point (each point) and get distances\r\n\t-Parameters:\r\n\t\tlstPtx : list of points\r\n\t-Return:\r\n\t\tlist of distance\r\n\t\"\"\" \r\n\tstartPt, endPt = lstPtx[0], lstPtx[-1]\r\n\tflag = True\r\n\ti = 0\r\n\tlist_distace = []\r\n\twhile flag and lstPtx and i < 100000:\r\n\t\ti += 1\r\n\t\tlstPtx.sort(key = lambda x : x.DistanceTo(startPt), reverse = True)\r\n\t\tdistaceToEnd1 = lstPtx[-1].DistanceTo(endPt)\r\n\t\tdistaceToEnd2 = lstPtx[-2].DistanceTo(endPt)\r\n\t\tnearest = lstPtx.pop()\r\n\t\tlist_distace.append(int(startPt.DistanceTo(nearest)))\r\n\t\tstartPt = nearest\r\n\t\tif distaceToEnd1 < distaceToEnd2 and distaceToEnd1 < 1:\r\n\t\t\tflag = False\r\n\r\n\treturn list_distace\r\n\r\ndef tamariz_alphashape(inputPts, alpha = 0.03):\r\n\t\"\"\"\r\n\t-typing: \r\n\t\t(inputPts: Union[list, List[DS.Point]], alpha : Union[float, System.Double]) -> List[DS.Curve]\r\n\t-description:\r\n\t\tcalculate alpha shape from 2D point cloud\r\n\t-Parameters:\r\n\t\tinputPts : list of DS.Point\r\n\t\talpha : the alfa precision\r\n\t-Return:\r\n\t\tlist of curves\r\n\t\"\"\"\r\n\tprint(\"Start processing\")\r\n\tinverse_alpha = 1 - alpha\r\n\tinputPts = sorted(inputPts, key = lambda p : (p.X, p.Y))\r\n\t#take a sample to get max_distance percentile\r\n\tif alpha == 0.0:\r\n\t\tuniqueCurv = convex_hull_graham(inputPts)\r\n\telse:\r\n\t\tinterval = max(2, int(0.001 * len(inputPts)))\r\n\t\tprint(\"interval\", interval)\r\n\t\tcopyinputPts = inputPts[::interval]\r\n\t\tdistances = get_near_distances_points(copyinputPts)\r\n\t\tdistances = list(set(distances))\r\n\t\tmax_distance = percentile(distances, inverse_alpha * 100)\r\n\t\tprint(\"max_distance\", max_distance)\r\n\t\tmaxX = max(p.X for p in inputPts)\r\n\t\tmaxY = max(p.Y for p in inputPts)\r\n\t\tp0 = DS.Point.ByCoordinates(maxX + 20, maxY + 20, 100)\r\n\t\tinputPts.append(p0)\r\n\t\tdelaun_Curves = list(TS.Delaunay.ByPoints(inputPts))\r\n\t\ttriangl_curves = []\r\n\t\ttriangl_curves = [delaun_Curves[i:i+3] for i in range(0, len(delaun_Curves), 3) if all(not c.StartPoint.IsAlmostEqualTo(p0) for c in delaun_Curves[i:i+3])]\r\n\t\ttriangl_curves = [sublst  for sublst in triangl_curves if all(c.Length < max_distance for c in sublst)]\r\n\t\tflat_curve = [j for i in triangl_curves for j in i]\r\n\t\tlines_serialze = [\"{},{}\".format(c.PointAtParameter(0.5), c.Length) for c in flat_curve]\r\n\t\tunique_str = [i for i in lines_serialze if lines_serialze.count(i) == 1]\r\n\t\tuniqueCurv = List[DS.Curve]([flat_curve[lines_serialze.index(i)] for i in unique_str])\r\n\treturn uniqueCurv\r\n\t\r\n\r\ninputPts = IN[0]\r\nalpha = IN[1]\r\n\r\nOUT = tamariz_alphashape(inputPts, alpha)\r\n\r\n\r\n\r\n",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "6282562778a14d2babfb30056f1128cb",
+      "Inputs": [
+        {
+          "Id": "f1d00640455b4e5aa2d4f4c8b5332d7b",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "433811db94f740d48fb4a77b5cb75943",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "e28278c2a8de427082eb89ad0492a408",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "pts = Point.ByCoordinates(Math.RandomList(400, -30, 150, 8)*50, Math.RandomList(400, 80, 100, 20)*50, 0);",
+      "Id": "0e4e8cf53e044eb3b03f7a6d576740f1",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "16b06a752672449f85625f22cc50710b",
+          "Name": "",
+          "Description": "pts",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Permet de créer le code DesignScript directement"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleSlider, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Double",
+      "MaximumValue": 0.5,
+      "MinimumValue": 0.0,
+      "StepValue": 0.01,
+      "InputValue": 0.03,
+      "Id": "0874d5a9ea764dfe90a3843490f3a8a5",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "a56fef2908454cf793ed22a3d16e52de",
+          "Name": "",
+          "Description": "Double",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Curseur qui génère des valeurs numériques."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSCore.List.Count@var[]..[]",
+      "Id": "a30079a6f6434a14b20dfa53ee5a4508",
+      "Inputs": [
+        {
+          "Id": "6781fd1809484d95925166a66a08a421",
+          "Name": "list",
+          "Description": "Obtenir le nombre d'éléments de cette liste.\n\nvar[]..[]",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "e5e27af0467043fa822d4077b610919c",
+          "Name": "int",
+          "Description": "Longueur de la liste.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Renvoie le nombre d'éléments stockés dans la liste indiquée.\n\nList.Count (list: var[]..[]): int"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Modifiers.GeometryColor.ByGeometryColor@Autodesk.DesignScript.Geometry.Geometry,DSCore.Color",
+      "Id": "f92f348b4a034b9683d3ec1858493b31",
+      "Inputs": [
+        {
+          "Id": "4cdd91ebec504491b49cc1bfac28db24",
+          "Name": "geometry",
+          "Description": "La géométrie à laquelle vous souhaitez appliquer une couleur.\n\nGeometry",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "4a5ab2c63d144f9a96e8c8669ba6bc42",
+          "Name": "color",
+          "Description": "La couleur.\n\nColor",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "87e8ff7be72c4a1aa765844fa3b82d01",
+          "Name": "GeometryColor",
+          "Description": "Un objet d'affichage.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Afficher la géométrie à l'aide d'une couleur.\n\nGeometryColor.ByGeometryColor (geometry: Geometry, color: Color): GeometryColor"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.ColorPalette, CoreNodeModels",
+      "InputValue": {
+        "R": 0,
+        "G": 0,
+        "B": 255,
+        "A": 255
+      },
+      "NodeType": "ColorInputNode",
+      "Id": "5bc8193226ba4b5e8486df46f99461ae",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d688952d9a6c42de9ba19235a6724768",
+          "Name": "Color",
+          "Description": "Selected Color.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélectionner une couleur dans la palette"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "43cc46a998684e1eac1902ca720c2bcd",
+      "End": "ef71c9d085ba4eeb807d7084b8fdb995",
+      "Id": "21339ee468a648beb8ba4b29554e4769",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "6c29ade1ce0c4836819888d0d621d0a2",
+      "End": "6db2415c6bc5404ba89f574955ac1c3b",
+      "Id": "c83dbf74a56949c88a16fd4a04047850",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "5e613e346ac44cffbbefdbe8881b1bfe",
+      "End": "f1d00640455b4e5aa2d4f4c8b5332d7b",
+      "Id": "aafa2828c4264b0db55743ba780d0326",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "5e613e346ac44cffbbefdbe8881b1bfe",
+      "End": "6781fd1809484d95925166a66a08a421",
+      "Id": "30504cfe85d04a96a881536d4a1e763c",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "e28278c2a8de427082eb89ad0492a408",
+      "End": "4cdd91ebec504491b49cc1bfac28db24",
+      "Id": "762114f07bfd43529cb96c155b8ec46d",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "16b06a752672449f85625f22cc50710b",
+      "End": "cd34cf5f2dc74af4a43482c611963061",
+      "Id": "bd574e09cd374ec9bb47e6627e3584f9",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "a56fef2908454cf793ed22a3d16e52de",
+      "End": "433811db94f740d48fb4a77b5cb75943",
+      "Id": "832b3d62f0ad452db590e6e85bfd5870",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "d688952d9a6c42de9ba19235a6724768",
+      "End": "4a5ab2c63d144f9a96e8c8669ba6bc42",
+      "Id": "c5305426d22946abb285071600e4f003",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "2.13",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "2.0",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "Aucun",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.13.1.3887",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Aperçu en arrière-plan",
+      "EyeX": 290.353759765625,
+      "EyeY": 5229.94921875,
+      "EyeZ": 651.542236328125,
+      "LookX": 1203.5848388671875,
+      "LookY": -6573.33544921875,
+      "LookZ": -3458.288818359375,
+      "UpX": 0.24617576599121094,
+      "UpY": 0.66261947154998779,
+      "UpZ": -0.70734214782714844
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Name": "Code Block",
+        "ShowGeometry": false,
+        "Id": "94a4f3c86f4049f69844e9dd4a142429",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -9.3498222239943516,
+        "Y": -811.82707099592687
+      },
+      {
+        "Name": "Code Block",
+        "ShowGeometry": false,
+        "Id": "9a03c58ed7c14d89a8ea6884377d7a75",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -8.64486043338718,
+        "Y": -667.92301198329358
+      },
+      {
+        "Name": "List.Join",
+        "ShowGeometry": true,
+        "Id": "45e30cff6d204ea99093d5e879f6f9f7",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 798.5965303839854,
+        "Y": -757.77501555380832
+      },
+      {
+        "Name": "Python Script | Delaunay alpha shape",
+        "ShowGeometry": false,
+        "Id": "6282562778a14d2babfb30056f1128cb",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1055.2214154586252,
+        "Y": -758.11440825601517
+      },
+      {
+        "Name": "Code Block",
+        "ShowGeometry": false,
+        "Id": "0e4e8cf53e044eb3b03f7a6d576740f1",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -3.9185648425375348,
+        "Y": -522.69572613870912
+      },
+      {
+        "Name": "Number Slider | alpha value",
+        "ShowGeometry": true,
+        "Id": "0874d5a9ea764dfe90a3843490f3a8a5",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 349.98205391958953,
+        "Y": -362.54438300070171
+      },
+      {
+        "Name": "List.Count",
+        "ShowGeometry": true,
+        "Id": "a30079a6f6434a14b20dfa53ee5a4508",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1063.9655077380967,
+        "Y": -591.31698980488227
+      },
+      {
+        "Name": "GeometryColor.ByGeometryColor",
+        "ShowGeometry": true,
+        "Id": "f92f348b4a034b9683d3ec1858493b31",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1567.9347035502847,
+        "Y": -754.91550602087864
+      },
+      {
+        "Name": "Color Palette",
+        "ShowGeometry": true,
+        "Id": "5bc8193226ba4b5e8486df46f99461ae",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1426.6968000583702,
+        "Y": -556.52836988380921
+      }
+    ],
+    "Annotations": [],
+    "X": 195.897285390786,
+    "Y": 704.25071678718848,
+    "Zoom": 0.75158157139256843
+  }
+}
