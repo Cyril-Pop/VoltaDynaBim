@@ -121,7 +121,7 @@ def tamariz_alphashape(inputPts, alpha = 0.03):
 		print("max_distance", max_distance)
 		maxX = max(p.X for p in inputPts)
 		maxY = max(p.Y for p in inputPts)
-		p0 = DS.Point.ByCoordinates(maxX + 20, maxY + 20, 100)
+		p0 = DS.Point.ByCoordinates(maxX , maxY , 300)
 		inputPts.append(p0)
 		delaun_Curves = list(TS.Delaunay.ByPoints(inputPts))
 		triangl_curves = []
