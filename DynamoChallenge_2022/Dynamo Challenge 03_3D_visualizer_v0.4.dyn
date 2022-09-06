@@ -1,0 +1,703 @@
+{
+  "Uuid": "35e92d60-7c2b-4275-8405-3d2a56974bc2",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "Dynamo Challenge 03_3D_visualizer_v0.4",
+  "ElementResolver": {
+    "ResolutionMap": {
+      "Color": {
+        "Key": "DSCore.Color",
+        "Value": "DSCoreNodes.dll"
+      }
+    }
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Charger les bibliothèques DesignScript et Standard Python\r\nimport sys\r\nimport clr\r\nimport System\r\nclr.AddReference('ProtoGeometry')\r\n#from Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry as DS\r\n\r\nclr.AddReference('Python.Included')\r\nimport Python.Included as pyInc\r\npath_py3_lib = pyInc.Installer.EmbeddedPythonHome\r\nsys.path.append(path_py3_lib + r'\\Lib\\site-packages')\r\n\r\n\r\nimport numpy as np # 1.22 or less\r\n#print(np.__version__)\r\nimport librosa\r\nimport ffmpeg \r\nimport math\r\n\r\nclass AudioData:\r\n    def __init__(self, fileName):\r\n        # getting information from the file\r\n        time_series, sample_rate = librosa.load(filename)\r\n        # getting a matrix which contains amplitude values according to frequency and time indexes\r\n        stft = np.abs(librosa.stft(time_series, hop_length=512, n_fft=2048*4))\r\n        # converting the matrix to decibel matrix\r\n        self.spectrogram = librosa.amplitude_to_db(stft, ref=np.max)\r\n        self.frequencies = librosa.core.fft_frequencies(n_fft=2048*4)  # getting an array of frequencies\r\n        # getting an array of time periodic\r\n        times = librosa.core.frames_to_time(np.arange(self.spectrogram.shape[1]), sr=sample_rate, hop_length=512, n_fft=2048*4)\r\n        self.time_index_ratio = len(times)/times[len(times) - 1]\r\n        self.frequencies_index_ratio = len(self.frequencies) / self.frequencies[len(self.frequencies)-1]\r\n        #\r\n        self._analyserPoints = None\r\n        \r\n    @property\r\n    def GraphScatterPoints(self):\r\n        if self._analyserPoints is not None:\r\n            return self._analyserPoints\r\n        else:\r\n            work_range = math.ceil(math.sqrt(len(self.frequencies) / 2))\r\n            self._analyserPoints = []\r\n            for i in range(work_range):\r\n                for j in range(work_range):\r\n                    p = DS.Point.ByCoordinates(i ,j , 1)\r\n                    self._analyserPoints.append(p)\r\n                    \r\n            center = DS.Point.ByCoordinates(int(work_range / 2) , int(work_range / 2) , 1)\r\n            self._analyserPoints.sort(key = lambda p : p.DistanceTo(center))\r\n            return self._analyserPoints\r\n            \r\n    def Get_Decibel(self, target_time, freq):\r\n        return self.spectrogram[int(freq * self.frequencies_index_ratio)][int(target_time * self.time_index_ratio)]\r\n        \r\n        \r\nfilename = IN[0]\r\n\r\nobj = AudioData(filename)\r\nOUT = obj",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "de05a371e3224c37afd628576e4c796f",
+      "Inputs": [
+        {
+          "Id": "633714842f5b4c3e9bf0d97239a50cc4",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "f5d30ce31dcc42a7888af9ce47944237",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.Filename, CoreNodeModels",
+      "HintPath": "D:\\REVIT\\Scripts Dynamo\\DEV_01 Recherche et Developpement R&D\\DynamoChalenge\\02_WAV files\\music 01_BabyElephantWalk60.wav",
+      "InputValue": "..\\02_WAV files\\music 01_BabyElephantWalk60.wav",
+      "NodeType": "ExtensionNode",
+      "Id": "9143934f308e4d60b49cab6dc0c726ea",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "58ea927b921d4e529aa2923f9c2e2551",
+          "Name": "",
+          "Description": "Chemin de fichier",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Permet de sélectionner un fichier dans le système pour obtenir son chemin."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSCore.DateTime.Now",
+      "Id": "645af9b6f8674ed6bba1be7b6604d549",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c5d230241f21476b8ad7a1a376fc1c51",
+          "Name": "dateTime",
+          "Description": "DateTime représentant l'heure et la date actuelles",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Date et heure actuelles du système.\n\nDateTime.Now: var"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Charger les bibliothèques DesignScript et Standard Python\r\nimport sys\r\nimport clr\r\nimport System\r\ntemp_path = System.IO.Path.GetTempPath()\r\n\r\nclr.AddReference('System.Drawing')\r\nclr.AddReference('System.Windows.Forms')\r\nimport System.Drawing\r\nimport System.Windows.Forms\r\n\r\nfrom System.Drawing import *\r\nfrom System.Windows.Forms import *\r\n\r\nimport time\r\n\r\n#reference loaded dynamo revit module\r\nclr.AddReference('DynamoRevitDS')\r\nimport Dynamo \r\nclr.AddReference('DynamoCore')\r\nfrom Dynamo.Graph import UpdateValueParams\r\n\r\n#access to the current Dynamo instance and workspace\r\ndynamoRevit = Dynamo.Applications.DynamoRevit()\r\nengine = dynamoRevit.RevitDynamoModel.EngineController\r\ncurrentWorkspace = dynamoRevit.RevitDynamoModel.CurrentWorkspace\r\nmodel = dynamoRevit.RevitDynamoModel\r\n\r\n\r\n\r\n\r\nclass FormPlayer(Form):\r\n    def __init__(self, wavfile, timestampNode):\r\n        self._wavfile = wavfile\r\n        self.fileName = System.IO.Path.GetFileName(wavfile)\r\n        self._timestampNode = timestampNode\r\n        self._player = System.Media.SoundPlayer(wavfile)\r\n        self.InitializeComponent()\r\n        self.UpdateTimeStampNode(reset = True)\r\n    \r\n    def InitializeComponent(self):\r\n        self._label1 = System.Windows.Forms.Label()\r\n        self._buttonCancel = System.Windows.Forms.Button()\r\n        self._buttonPlay = System.Windows.Forms.Button()\r\n        self.SuspendLayout()\r\n        # \r\n        # label1\r\n        # \r\n        self._label1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right\r\n        self._label1.Font = System.Drawing.Font(\"Microsoft Sans Serif\", 12, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, 0)\r\n        self._label1.Location = System.Drawing.Point(100, 21)\r\n        self._label1.Name = \"label1\"\r\n        self._label1.Size = System.Drawing.Size(267, 48)\r\n        self._label1.TabIndex = 0\r\n        self._label1.Text = self.fileName\r\n        self._label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter\r\n        # \r\n        # buttonCancel\r\n        # \r\n        self._buttonCancel.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left\r\n        self._buttonCancel.Location = System.Drawing.Point(21, 91)\r\n        self._buttonCancel.Name = \"buttonCancel\"\r\n        self._buttonCancel.Size = System.Drawing.Size(110, 40)\r\n        self._buttonCancel.TabIndex = 1\r\n        self._buttonCancel.Text = \"Stop\"\r\n        self._buttonCancel.UseVisualStyleBackColor = True\r\n        self._buttonCancel.Click += self.ButtonCancelClick\r\n        # \r\n        # buttonPlay\r\n        # \r\n        self._buttonPlay.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right\r\n        self._buttonPlay.Location = System.Drawing.Point(320, 91)\r\n        self._buttonPlay.Name = \"buttonPlay\"\r\n        self._buttonPlay.Size = System.Drawing.Size(110, 40)\r\n        self._buttonPlay.TabIndex = 1\r\n        self._buttonPlay.Text = \"Play/ReStart\"\r\n        self._buttonPlay.UseVisualStyleBackColor = True\r\n        self._buttonPlay.Click += self.ButtonPlayClick\r\n        # \r\n        # Form16\r\n        # \r\n        self.ClientSize = System.Drawing.Size(450, 156)\r\n        self.MinimumSize = self.ClientSize + System.Drawing.Size(10, 10)\r\n        self.Controls.Add(self._buttonPlay)\r\n        self.Controls.Add(self._buttonCancel)\r\n        self.Controls.Add(self._label1)\r\n        self.Name = \"Form16\"\r\n        self.Text = \"FormPlayer\"\r\n        self.ResumeLayout(False)\r\n\r\n\r\n    def ButtonCancelClick(self, sender, e):\r\n        self._player.Stop()\r\n        self.UpdateTimeStampNode(reset = True)\r\n        time.sleep(0.1)\r\n        self.Close()\r\n        self.Dispose()\r\n        \r\n    def UpdateTimeStampNode(self, reset = False):\r\n        if reset:\r\n            ts = 0.0\r\n        else:\r\n            ts = time.time()\r\n        params = UpdateValueParams(\"Value\", str(ts))\r\n        self._timestampNode.UpdateValue(params)\r\n\r\n    def ButtonPlayClick(self, sender, e):\r\n        ts = time.time()\r\n        self.UpdateTimeStampNode()\r\n        self._player.Play()\r\n\r\n\r\ndef get_decibel(target_time, freq):\r\n    return spectrogram[int(freq * frequencies_index_ratio)][int(target_time * time_index_ratio)]\r\n    \r\n    \r\ntimestampNode = None\r\n\r\n#find the specific node\r\nfor i in currentWorkspace.Nodes:\r\n    if i.Name == \"timespanNode\":\r\n        timestampNode = i\r\nif timestampNode is not None:\r\n    \r\n    filenamePath = IN[0]\r\n    fileName = System.IO.Path.GetFileName(filenamePath)\r\n    copyfile_path = System.IO.Path.Combine(temp_path, fileName)\r\n    System.IO.File.Copy(filenamePath, copyfile_path, True)\r\n    player = FormPlayer(copyfile_path, timestampNode)\r\n    player.Show()\r\n",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "19976b688a164894a6653932f48a41c1",
+      "Inputs": [
+        {
+          "Id": "04c0415b6e864c578c9278001ab44010",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "82374725640240ef82b1d3c13a17310f",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleInput, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Double",
+      "InputValue": 0.0,
+      "Id": "2bff72c3431248b4828cc8ebab2a30cc",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "3223d20217504f9e9dd7bdbe614917cb",
+          "Name": "",
+          "Description": "Double",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Crée un nombre."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Charger les bibliothèques DesignScript et Standard Python\r\nimport sys\r\nimport clr\r\nimport System\r\nclr.AddReference('ProtoGeometry')\r\n#from Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry as DS\r\n\r\nclr.AddReference('GeometryColor')\r\nfrom Modifiers import GeometryColor\r\nclr.AddReference('DSCoreNodes') \r\nimport DSCore\r\nfrom DSCore import Color as DSColor\r\n\r\nclr.AddReference('DynamoRevitDS')\r\nimport Dynamo \r\nclr.AddReference('DynamoCore')\r\nfrom Dynamo.Graph import UpdateValueParams\r\n#access to the current Dynamo instance and workspace\r\ndynamoRevit = Dynamo.Applications.DynamoRevit()\r\nengine = dynamoRevit.RevitDynamoModel.EngineController\r\ncurrentWorkspace = dynamoRevit.RevitDynamoModel.CurrentWorkspace\r\nmodel = dynamoRevit.RevitDynamoModel\r\n\r\nclr.AddReference('Python.Included')\r\nimport Python.Included as pyInc\r\npath_py3_lib = pyInc.Installer.EmbeddedPythonHome\r\nsys.path.append(path_py3_lib + r'\\Lib\\site-packages')\r\n\r\n\r\nimport numpy as np # 1.22 or less\r\nimport librosa\r\nimport ffmpeg \r\nimport math\r\nimport time\r\n\r\n\r\nobj_play = IN[0]\r\nshow_lines = IN[1]\r\n\r\ntimestampNode = None\r\n\r\n#find the specific node\r\nfor i in currentWorkspace.Nodes:\r\n    if i.Name == \"timespanNode\":\r\n        timestampNode = i\r\noutptdisplay = []\r\nout_lvl_db = []\r\nif timestampNode is not None:\r\n    start_ts = timestampNode.GetValue(0,engine).Data\r\n    if start_ts > 0.0:\r\n        current_timePlay = time.time() - start_ts\r\n        for pt, fg in zip(obj_play.GraphScatterPoints, obj_play.frequencies):\r\n            basept = DS.Point.ByCoordinates(pt.X ,pt.Y , -21.1)\r\n            #fg = np.random.choice(obj_play.frequencies)\r\n            lvldb =  obj_play.Get_Decibel(current_timePlay, fg)\r\n            newpt = DS.Point.ByCoordinates(pt.X ,pt.Y , lvldb * 0.25)\r\n            out_lvl_db.append(newpt.Z)\r\n            if show_lines:\r\n                line = DS.Line.ByStartPointEndPoint(basept, newpt)\r\n                outptdisplay.append(line)\r\n                basept.Dispose()\r\n            else:\r\n                outptdisplay.append(newpt)\r\n\r\nOUT = outptdisplay, out_lvl_db\r\n",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "bc4143a618e848f0a3b0de2536474b3d",
+      "Inputs": [
+        {
+          "Id": "75e5fde78c534b00b54303d95abb33b3",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "05e96ac0d0744c39b4552158be8e7679",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "a85018b13e8147b5b9b0d0d791076e74",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "141af71ed5bd4a9ab5f4a8cdb44ef4ed",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.ColorRange, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "651285a3d4164754afdb9e06e82882e9",
+      "Inputs": [
+        {
+          "Id": "7cee931a32f24bcfa7276eabc661c028",
+          "Name": "colors",
+          "Description": "Liste de couleurs à inclure dans l'intervalle",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d6a701d2026741d1acc3d234dbd270ab",
+          "Name": "indices",
+          "Description": "Liste de valeurs comprises entre 0.0 et 1.0 qui définissent la position des couleurs d'entrée le long de l'intervalle",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "94a1ae907f5e4d728cd88d1219b00263",
+          "Name": "value",
+          "Description": "Liste de valeurs comprises entre 0.0 et 1.0. Ces valeurs définissent les couleurs sélectionnées le long de l'intervalle de couleurs pour créer la liste de couleurs.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "89689b8ec76243a1b084944197226b10",
+          "Name": "color",
+          "Description": "Couleurs sélectionnées",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Obtenir une couleur en fonction d'un intervalle de couleurs."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "DSCore.Math.RemapRange@double[],double,double",
+      "Id": "de052e342a8c4280a6de77370ff19b69",
+      "Inputs": [
+        {
+          "Id": "417463b9b5c44106af5a6125871edcf2",
+          "Name": "numbers",
+          "Description": "Ajuster l'intervalle de nombres de cette liste.\n\ndouble[]",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "24f90911220f49cbb2e2cad3ee1dee80",
+          "Name": "newMin",
+          "Description": "Nouveau minimum de l'intervalle.\n\ndouble\nValeur par défaut : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "8bd86a2d71594d87a7022d530ea46e90",
+          "Name": "newMax",
+          "Description": "Nouveau maximum de l'intervalle\n\ndouble\nValeur par défaut : 1",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0ec77a8144824f61b47ec6ca630c00ae",
+          "Name": "list",
+          "Description": "Liste remappée en fonction du nouvel intervalle.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Ajuste l'intervalle d'une liste de nombres, tout en conservant le rapport de distribution.\n\nMath.RemapRange (numbers: double[], newMin: double = 0, newMax: double = 1): var[]..[]"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "FunctionNode",
+      "FunctionSignature": "Modifiers.GeometryColor.ByGeometryColor@Autodesk.DesignScript.Geometry.Geometry,DSCore.Color",
+      "Id": "539e6535cd134e20953b1c1cf21656ad",
+      "Inputs": [
+        {
+          "Id": "f4c0555f850f43c89d5ddefc33fb132f",
+          "Name": "geometry",
+          "Description": "La géométrie à laquelle vous souhaitez appliquer une couleur.\n\nGeometry",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "311ea56c45624f2092d2bbb03ab4232b",
+          "Name": "color",
+          "Description": "La couleur.\n\nColor",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "34b577768f0e4a3fb67f8864df93a637",
+          "Name": "GeometryColor",
+          "Description": "Un objet d'affichage.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Afficher la géométrie à l'aide d'une couleur.\n\nGeometryColor.ByGeometryColor (geometry: Geometry, color: Color): GeometryColor"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "b318003af0c24317903f238182169a18",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "bfa45c135ce742d1960f41e56bd563d8",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélection entre True et False."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "lst_geo = x[0];\nlvldb = x[1];",
+      "Id": "58e98b48273c4eb1953ae6ca2e459576",
+      "Inputs": [
+        {
+          "Id": "b91495fa78814c959d925f251854b9e9",
+          "Name": "x",
+          "Description": "x",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "54205255b75f446ebc0506b13bee25ac",
+          "Name": "",
+          "Description": "lst_geo",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "fce40792722d4380b54c377573f2a000",
+          "Name": "",
+          "Description": "lvldb",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Permet de créer le code DesignScript directement"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "f5d30ce31dcc42a7888af9ce47944237",
+      "End": "75e5fde78c534b00b54303d95abb33b3",
+      "Id": "5c3fe5a8b89f4f1eabcc444cfcf4cfbe",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "58ea927b921d4e529aa2923f9c2e2551",
+      "End": "633714842f5b4c3e9bf0d97239a50cc4",
+      "Id": "93ee78758e294012b0ee6d6be08768a2",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "58ea927b921d4e529aa2923f9c2e2551",
+      "End": "04c0415b6e864c578c9278001ab44010",
+      "Id": "0606bf4329784cc98abbb2d966c0dea4",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "c5d230241f21476b8ad7a1a376fc1c51",
+      "End": "a85018b13e8147b5b9b0d0d791076e74",
+      "Id": "7c436bb3ee21404d90c674bd8eb12b3b",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "141af71ed5bd4a9ab5f4a8cdb44ef4ed",
+      "End": "b91495fa78814c959d925f251854b9e9",
+      "Id": "46919f86a097467e988567c468bb6a69",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "89689b8ec76243a1b084944197226b10",
+      "End": "311ea56c45624f2092d2bbb03ab4232b",
+      "Id": "a02ab85f051548109a6231a28f244108",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "0ec77a8144824f61b47ec6ca630c00ae",
+      "End": "94a1ae907f5e4d728cd88d1219b00263",
+      "Id": "2d00978be0fd48eab9d468065ca2108a",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "bfa45c135ce742d1960f41e56bd563d8",
+      "End": "05e96ac0d0744c39b4552158be8e7679",
+      "Id": "2cb8d74f35a64f2c9234b4b335e34cc5",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "54205255b75f446ebc0506b13bee25ac",
+      "End": "f4c0555f850f43c89d5ddefc33fb132f",
+      "Id": "86e90b90ca344d75b306a49ea2736046",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "fce40792722d4380b54c377573f2a000",
+      "End": "417463b9b5c44106af5a6125871edcf2",
+      "Id": "ecef6eb6f69c446b80ab598412a42d44",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "2.13",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "1.10",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "Aucun",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": false,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.13.1.3887",
+      "RunType": "Manual",
+      "RunPeriod": "300"
+    },
+    "Camera": {
+      "Name": "Aperçu en arrière-plan",
+      "EyeX": 52.287101745605469,
+      "EyeY": 9.9683895111083984,
+      "EyeZ": 30.497735977172852,
+      "LookX": -32.664588928222656,
+      "LookY": -38.859535217285156,
+      "LookZ": -26.159151077270508,
+      "UpX": -0.39615872502326965,
+      "UpY": 0.86162823438644409,
+      "UpZ": -0.31726187467575073
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Name": "Python Script",
+        "ShowGeometry": false,
+        "Id": "de05a371e3224c37afd628576e4c796f",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 259.0,
+        "Y": 241.0
+      },
+      {
+        "Name": "File Path",
+        "ShowGeometry": true,
+        "Id": "9143934f308e4d60b49cab6dc0c726ea",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -572.9285392432123,
+        "Y": 187.69569615854184
+      },
+      {
+        "Name": "DateTime.Now",
+        "ShowGeometry": true,
+        "Id": "645af9b6f8674ed6bba1be7b6604d549",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 352.37108308434409,
+        "Y": 571.05928281654064
+      },
+      {
+        "Name": "Python Script",
+        "ShowGeometry": true,
+        "Id": "19976b688a164894a6653932f48a41c1",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 29.132372725355935,
+        "Y": -10.562649338670411
+      },
+      {
+        "Name": "timespanNode",
+        "ShowGeometry": true,
+        "Id": "2bff72c3431248b4828cc8ebab2a30cc",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 481.25613866174979,
+        "Y": 4.3857455128262472
+      },
+      {
+        "Name": "Python Script",
+        "ShowGeometry": false,
+        "Id": "bc4143a618e848f0a3b0de2536474b3d",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 814.148197231425,
+        "Y": 235.370127938415
+      },
+      {
+        "Name": "Color Range",
+        "ShowGeometry": true,
+        "Id": "651285a3d4164754afdb9e06e82882e9",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1602.9981216257386,
+        "Y": 334.67583595056766
+      },
+      {
+        "Name": "Math.RemapRange",
+        "ShowGeometry": true,
+        "Id": "de052e342a8c4280a6de77370ff19b69",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1332.7657248208095,
+        "Y": 395.55661942532885
+      },
+      {
+        "Name": "GeometryColor.ByGeometryColor",
+        "ShowGeometry": true,
+        "Id": "539e6535cd134e20953b1c1cf21656ad",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1989.93354114894,
+        "Y": 251.77886290010906
+      },
+      {
+        "Name": "Show Lines instead of points ?",
+        "ShowGeometry": true,
+        "Id": "b318003af0c24317903f238182169a18",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 307.14093874005664,
+        "Y": 402.77052158491426
+      },
+      {
+        "Name": "Code Block",
+        "ShowGeometry": false,
+        "Id": "58e98b48273c4eb1953ae6ca2e459576",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1028.4694369957194,
+        "Y": 245.92934317161775
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "564dc286040441b4ad310fafee18bee0",
+        "Title": "Player",
+        "DescriptionText": "<Double-cliquer ici pour modifier la description du groupe>",
+        "IsExpanded": true,
+        "WidthAdjustment": 0.0,
+        "HeightAdjustment": 0.0,
+        "Nodes": [
+          "19976b688a164894a6653932f48a41c1"
+        ],
+        "HasNestedGroups": false,
+        "Left": 19.132372725355935,
+        "Top": -106.56264933867041,
+        "Width": 194.0,
+        "Height": 228.0,
+        "FontSize": 36.0,
+        "InitialTop": -10.562649338670411,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 86.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "784126130c2d4da39aeb4df0041c467d",
+        "Title": "get Data form wav",
+        "DescriptionText": "<Double-cliquer ici pour modifier la description du groupe>",
+        "IsExpanded": true,
+        "WidthAdjustment": 0.0,
+        "HeightAdjustment": 0.0,
+        "Nodes": [
+          "de05a371e3224c37afd628576e4c796f"
+        ],
+        "HasNestedGroups": false,
+        "Left": 249.0,
+        "Top": 102.0,
+        "Width": 194.0,
+        "Height": 283.0,
+        "FontSize": 36.0,
+        "InitialTop": 241.0,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 129.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "3848b453dfa84ab38ba41f192fa137e6",
+        "Title": "save start time play",
+        "DescriptionText": "<Double-cliquer ici pour modifier la description du groupe>",
+        "IsExpanded": true,
+        "WidthAdjustment": 0.0,
+        "HeightAdjustment": 0.0,
+        "Nodes": [
+          "2bff72c3431248b4828cc8ebab2a30cc"
+        ],
+        "HasNestedGroups": false,
+        "Left": 471.25613866174979,
+        "Top": -134.61425448717375,
+        "Width": 202.0,
+        "Height": 271.0,
+        "FontSize": 36.0,
+        "InitialTop": 4.3857455128262472,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 129.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "a9eafd8b6c804f7e8018d36dfc35e4bf",
+        "Title": "Music visualizer",
+        "DescriptionText": "<Double-cliquer ici pour modifier la description du groupe>",
+        "IsExpanded": true,
+        "WidthAdjustment": 0.0,
+        "HeightAdjustment": 0.0,
+        "Nodes": [
+          "bc4143a618e848f0a3b0de2536474b3d",
+          "651285a3d4164754afdb9e06e82882e9",
+          "de052e342a8c4280a6de77370ff19b69",
+          "539e6535cd134e20953b1c1cf21656ad",
+          "58e98b48273c4eb1953ae6ca2e459576"
+        ],
+        "HasNestedGroups": false,
+        "Left": 804.148197231425,
+        "Top": 162.370127938415,
+        "Width": 1515.7853439175151,
+        "Height": 430.18649148691378,
+        "FontSize": 36.0,
+        "InitialTop": 235.370127938415,
+        "InitialHeight": 305.18649148691384,
+        "TextblockHeight": 63.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": 479.52614549387806,
+    "Y": 267.07950986465363,
+    "Zoom": 0.56202637031367331
+  }
+}
