@@ -1,0 +1,206 @@
+{
+  "Uuid": "1bcf5b3e-09bb-4f62-b840-460a59c08a10",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "test wpf datagrid_v10_for_blog",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr  \r\nimport sys\r\nimport System\r\nfrom System.Collections.Generic import List, KeyValuePair\r\nfrom System.Collections.ObjectModel import ObservableCollection\r\n\r\n#import Revit API\r\nclr.AddReference('RevitAPI')\r\nimport Autodesk\r\nfrom Autodesk.Revit.DB import *\r\nimport Autodesk.Revit.DB as DB\r\n\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\n\r\n\r\nsys.path.append(r'C:\\Program Files (x86)\\IronPython 2.7\\Lib')\r\nsys.path.append(r'C:\\Program Files (x86)\\IronPython 2.7\\DLLs')\r\nclr.AddReference(\"System.Core\")\r\nclr.ImportExtensions(System.Linq)\r\n\r\ntry:\r\n\tclr.AddReference(\"IronPython.Wpf\")\r\n\tclr.AddReference('System.Core')\r\n\tclr.AddReference('System.Xml')\r\n\tclr.AddReference('PresentationCore')\r\n\tclr.AddReference('PresentationFramework')\r\n\tclr.AddReferenceByPartialName(\"WindowsBase\")\r\nexcept IOError:\r\n\traise\r\n\t\r\nfrom System.IO import StringReader\r\nfrom System.Windows.Markup import XamlReader, XamlWriter\r\nfrom System.Windows import Window, Application\r\nfrom System.ComponentModel import INotifyPropertyChanged\r\nfrom System.ComponentModel import PropertyChangedEventArgs\r\n\r\ntry:\r\n\timport wpf\r\n\timport time\r\nexcept ImportError:\r\n\traise\r\n\r\nclass XamlLoader(Window):\r\n\t\r\n\tdef __init__(self, xaml_str):\r\n\t\tself.ui = wpf.LoadComponent(self, StringReader(xaml_str))\r\n\t\tself.ui.Title = \"Select Types\"\r\n\t\t\r\n\tdef ButtonClick(self, sender, e):\r\n\t\tself.DialogResult = True\r\n\t\tself.Close()\r\n\t\r\n\tdef __getattr__(self, item):\r\n\t\t\"\"\"Maps values to attributes.\r\n\t\tOnly called if there *isn't* an attribute with this name\r\n\t\t\"\"\"\r\n\t\treturn self.ui.FindName(item)\r\n\r\nclass ViewModelBase(INotifyPropertyChanged):\r\n\t\"\"\"\r\n\tbase view model class that implements the INotifyPropertyChanged interface\r\n\t\"\"\"\r\n\tdef __init__(self):\r\n\t\tself.propertyChangedHandlers = []\r\n\t#\r\n\t# Define a method to raise the PropertyChanged event\r\n\tdef RaisePropertyChanged(self, propertyName):\r\n\t\t# Create a PropertyChangedEventArgs object with the name of the changed property\r\n\t\targs = PropertyChangedEventArgs(propertyName)\r\n\t\tfor handler in self.propertyChangedHandlers:\r\n\t\t\t# Invoke each of the registered property changed handlers with the ViewModelBase instance and the event arguments\r\n\t\t\thandler(self, args)\r\n\t#\r\n\t# Define a method to add a property changed handler\r\n\tdef add_PropertyChanged(self, handler):\r\n\t\tself.propertyChangedHandlers.append(handler)\r\n\t#\r\n\t# Define a method to remove a property changed handler\r\n\tdef remove_PropertyChanged(self, handler):\r\n\t\tself.propertyChangedHandlers.remove(handler)\r\n\t\t\r\n\r\nclass MyDataViewModel(ViewModelBase):\r\n\t\"\"\"\r\n\ta view model class that inherits from ViewModelBase\r\n\t\"\"\"\r\n\tdef __init__(self):\r\n\t\tViewModelBase.__init__(self)\r\n\t\tself._Name = \"\"\r\n\t\tself._FamilyName = \"\"\r\n\t\t# define a attribute to store the selected value from conbobox (binding)\r\n\t\tself._SelectValue = \"\"\r\n\t\tself._LstValue = ObservableCollection[System.String]()\r\n\t\r\n\t# Define all getters and setters properties \r\n\t@property\r\n\tdef Name(self):\r\n\t\treturn self._Name\r\n\r\n\t@Name.setter\r\n\tdef Name(self, value):\r\n\t\tself._Name = value\r\n\t\t# Raise the PropertyChanged event with the name of the changed property\r\n\t\tself.RaisePropertyChanged(\"Name\")\r\n\t\t\r\n\t@property\r\n\tdef FamilyName(self):\r\n\t\treturn self._FamilyName\r\n\r\n\t@FamilyName.setter\r\n\tdef FamilyName(self, value):\r\n\t\tself._FamilyName = value\r\n\t\t# Raise the PropertyChanged event with the name of the changed property\r\n\t\tself.RaisePropertyChanged(\"FamilyName\")\r\n\t\t\r\n\t@property\r\n\tdef SelectValue(self):\r\n\t\treturn self._SelectValue\r\n\r\n\t@SelectValue.setter\r\n\tdef SelectValue(self, value):\r\n\t\tself._SelectValue = value\r\n\t\t# Raise the PropertyChanged event with the name of the changed property\r\n\t\tself.RaisePropertyChanged(\"SelectValue\")\r\n\t\t\r\n\t@property\r\n\tdef LstValue(self):\r\n\t\treturn self._LstValue\r\n\t\t\r\n\t@LstValue.setter\r\n\tdef LstValue(self, lst_value):\r\n\t\tself._LstValue = ObservableCollection[System.String](lst_value)\r\n\t\t# Raise the PropertyChanged event with the name of the changed property\r\n\t\tself.RaisePropertyChanged(\"LstValue\")\r\n\t\t\r\nclass DataModel(XamlLoader):\r\n\t\"\"\"\r\n\tclass to get/set Data\r\n\t\"\"\"\r\n\tdef __init__(self, xaml):\r\n\t\tsuper(DataModel, self).__init__(xaml)\r\n\t\t#\r\n\t\tused_DoorsTypeIds = set(list(FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Doors)\\\r\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t.WhereElementIsNotElementType()\\\r\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t.Select(lambda x : x.GetTypeId())))\r\n\t\t#\r\n\t\tself.Net_dict_DType = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Doors)\\\r\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t.WhereElementIsElementType()\\\r\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t.Select(lambda x : KeyValuePair[System.String, DB.Element](x.FamilyName +\":\"+ Element.Name.GetValue(x), x))\\\r\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t.ToDictionary(lambda kvp: kvp.Key, lambda kvp: kvp.Value)\t\r\n\t\t#\r\n\t\t# Create an ObservableCollection of MyDataViewModel objects\r\n\t\tself.data = ObservableCollection[MyDataViewModel]()\r\n\t\tfor doorTypeId in used_DoorsTypeIds:\r\n\t\t\tdoorType = doc.GetElement(doorTypeId)\r\n\t\t\ten = MyDataViewModel()\r\n\t\t\ten.Name = Element.Name.GetValue(doorType)\r\n\t\t\ten.FamilyName = doorType.FamilyName\r\n\t\t\t# set list for combobox \r\n\t\t\ten.LstValue = self.Net_dict_DType.Keys \r\n\t\t\tself.data.Add(en)\r\n\t\t# set wpf grid DataContext \r\n\t\tself.ui.DataContext = self.data\r\n\r\n\t\r\nxaml = IN[0]\r\nobjData = DataModel(xaml)\r\nobjData.ui.ShowDialog()\r\ndict_DType = objData.Net_dict_DType\r\n\r\nOUT = [[x.SelectValue, dict_DType[x.SelectValue] if  dict_DType.ContainsKey(x.SelectValue) else None]  for x in objData.data]\r\n\r\n",
+      "Engine": "IronPython2",
+      "EngineName": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "fa4bed69858d4e2b964fd40837b77293",
+      "Inputs": [
+        {
+          "Id": "1db00b0296034f5f8b6ac40876037749",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "0c2a409ee443471a9d5ed75834f298f1",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6230938e336f40a18fa9d397c06f3282",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "# Charger les bibliothèques DesignScript et Standard Python\r\nimport sys\r\n\r\nLAYOUT = '''\r\n\t<Window\r\n\t\txmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\"\r\n\t\txmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\"\r\n\t\txmlns:d=\"http://schemas.microsoft.com/expression/blend/2008\"\r\n\t\txmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\"\r\n\t\txmlns:local=\"clr-namespace:WpfApplication1\"\r\n\t\tmc:Ignorable=\"d\" \r\n\t\tHeight=\"600\" \r\n\t\tWidth=\"600\" \r\n\t\tResizeMode=\"NoResize\"\r\n\t\tTitle=\"A\" \r\n\t\tWindowStartupLocation=\"CenterScreen\" \r\n\t\tTopmost=\"True\" \r\n\t\tSizeToContent=\"Width\">\r\n\t\t<Grid Margin=\"10,0,10,10\">\r\n\t\t\t<Label x:Name=\"selection_label\" Content=\"Select Item\" HorizontalAlignment=\"Left\" Height=\"30\"\r\n\t\t\t\tVerticalAlignment=\"Top\"/>\r\n\t\t\t\t<Button x:Name=\"button_select\" \r\n\t\t\t\t\t\tContent=\"Select\" \r\n\t\t\t\t\t\tHorizontalAlignment=\"Center\" \r\n\t\t\t\t\t\tHeight=\"26\" Margin=\"0,63,0,0\" \r\n\t\t\t\t\t\tVerticalAlignment=\"Bottom\" \r\n\t\t\t\t\t\tWidth=\"200\" \r\n\t\t\t\t\t\tClick=\"ButtonClick\"/>\r\n\t\t\t\t<DataGrid   x:Name=\"dataGrid\" \r\n\t\t\t\t\t\t\tAutoGenerateColumns=\"False\"\r\n\t\t\t\t\t\t\tMargin=\"10,30,10,30\"\r\n\t\t\t\t\t\t\tBorderThickness=\"1\"\r\n\t\t\t\t\t\t\tRowHeaderWidth=\"0\"\r\n\t\t\t\t\t\t\tCanUserSortColumns=\"True\"\r\n\t\t\t\t\t\t\tCanUserResizeColumns = \"False\"\r\n\t\t\t\t\t\t\tVerticalScrollBarVisibility=\"Auto\"\r\n\t\t\t\t\t\t\tItemsSource=\"{Binding}\">\r\n\t\t\t\t<DataGrid.Columns>\r\n\t\t\t\t\t<DataGridTextColumn Header=\"FamilyName\" \r\n\t\t\t\t\t\t\t\t\tBinding=\"{Binding FamilyName}\" \r\n\t\t\t\t\t\t\t\t\tIsReadOnly=\"True\" \r\n\t\t\t\t\t\t\t\t\tWidth=\"250\"/>\r\n\t\t\t\t\t<DataGridTextColumn Header=\"Name\" \r\n\t\t\t\t\t\t\t\t\tBinding=\"{Binding Name}\" \r\n\t\t\t\t\t\t\t\t\tIsReadOnly=\"True\" \r\n\t\t\t\t\t\t\t\t\tWidth=\"100\"/>\r\n\t\t\t\t\t<DataGridTemplateColumn Header=\"Param\">\r\n\t\t\t\t\t\t<DataGridTemplateColumn.CellTemplate>\r\n\t\t\t\t\t\t\t<DataTemplate>\r\n\t\t\t\t\t\t\t\t<ComboBox x:Name=\"Combobox\"\r\n\t\t\t\t\t\t\t\t\tItemsSource=\"{Binding LstValue}\" \r\n\t\t\t\t\t\t\t\t\tSelectedItem=\"{Binding SelectValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}\" \r\n\t\t\t\t\t\t\t\t\tWidth=\"200\"/>\r\n\t\t\t\t\t\t</DataTemplate>\r\n\t\t\t\t\t</DataGridTemplateColumn.CellTemplate>\r\n\t\t\t\t</DataGridTemplateColumn>\r\n\t\t\t\t</DataGrid.Columns>\r\n\t\t\t</DataGrid>\r\n\t\t</Grid>\r\n\t</Window>'''\r\n\t\r\nOUT = LAYOUT",
+      "Engine": "IronPython2",
+      "EngineName": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "05ae24c155ee4030a01177a31a2e9c5b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "2f72f55107d649ba98c42d4df07b3697",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "7a49e6538e13450e8db99e293d59b551",
+      "Inputs": [
+        {
+          "Id": "8f83c3b248274bf191f008321576d1cd",
+          "Name": "",
+          "Description": "Afficher la sortie de ce noeud",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "97d0db8aecab43a48177b1d5d530919a",
+          "Name": "",
+          "Description": "Sortie du noeud",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualiser la sortie du nœud"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "6230938e336f40a18fa9d397c06f3282",
+      "End": "8f83c3b248274bf191f008321576d1cd",
+      "Id": "b215f8f666c44d1fb17c0942f911accc",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "2f72f55107d649ba98c42d4df07b3697",
+      "End": "1db00b0296034f5f8b6ac40876037749",
+      "Id": "affe5a2320a14832ad3969b2e9310418",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Propriétés",
+      "Version": "2.16",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "3.0",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "Aucun",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.16.1.2727",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Aperçu en arrière-plan",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Name": "Python Script | Example MVVM",
+        "ShowGeometry": true,
+        "Id": "fa4bed69858d4e2b964fd40837b77293",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 3194.0072570336647,
+        "Y": -522.6798613995179
+      },
+      {
+        "Name": "Python Script | xaml",
+        "ShowGeometry": true,
+        "Id": "05ae24c155ee4030a01177a31a2e9c5b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2836.5387883253939,
+        "Y": -522.80330517259279
+      },
+      {
+        "Name": "Watch",
+        "ShowGeometry": true,
+        "Id": "7a49e6538e13450e8db99e293d59b551",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 3552.0416287732423,
+        "Y": -514.15782413254578
+      }
+    ],
+    "Annotations": [],
+    "X": -2212.8862919023122,
+    "Y": 550.50762937582874,
+    "Zoom": 0.800352751745241
+  }
+}
