@@ -1,0 +1,198 @@
+{
+  "Uuid": "22bf2bcd-b1f4-4080-8866-4de36c9542a7",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "test DataFrame extension MEPSYStem_git_v10",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nimport sys\r\nimport System\r\nclr.AddReference(\"System.Numerics\")\r\n#\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport Autodesk.DesignScript.Geometry as DS\r\n\r\n#import Revit API\r\nclr.AddReference('RevitAPI')\r\nimport Autodesk\r\nfrom Autodesk.Revit.DB import *\r\nimport Autodesk.Revit.DB as DB\r\n#import specify namespace\r\nfrom Autodesk.Revit.DB.Electrical import *\r\nfrom Autodesk.Revit.DB.Structure import *\r\n\r\n#import net library\r\nfrom System import Array\r\nfrom System.Collections.Generic import List, IList, Dictionary\r\n\r\n#import transactionManager and DocumentManager (RevitServices is specific to Dynamo)\r\nclr.AddReference('RevitServices')\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\n\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\n\r\nmy_path = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)\r\npf_path = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFilesX86)\r\n\r\n\r\nclr.AddReference('Python.Included')\r\nimport Python.Included as pyInc\r\npath_py3_lib = pyInc.Installer.EmbeddedPythonHome\r\nsys.path.append(path_py3_lib + r'\\Lib\\site-packages')\r\nimport numpy as np\r\nimport pandas as pd\r\nimport webbrowser\r\nimport matplotlib.pyplot as plt\r\nimport io\r\nimport base64\r\nimport re\r\n\r\n\r\n@pd.api.extensions.register_dataframe_accessor(\"viewer\")\r\nclass HtmlAccessor:\r\n    def __init__(self, df_obj):\r\n        self._obj = df_obj\r\n    #\r\n    def Show(self, n=0):\r\n        \"\"\"\r\n        convert DataFrame to Html and show it \r\n        \"\"\"\r\n        # get current html\r\n        htmlDf = viewerForm.htmlDf\r\n        # convert current dataFrame to html\r\n        if n == 0:\r\n            html_toAdd = self._obj.to_html()\r\n        else:\r\n            html_toAdd = self._obj.head(n).to_html()\r\n        # add to the current html\r\n        htmlDf = re.sub(r\"<\\/body>\", html_toAdd + r\"<br><hr><br></body>\", htmlDf)\r\n        # update the html in form\r\n        viewerForm.HtmlText = htmlDf\r\n\r\n        \r\n    def Plot(self, method=\"plot()\"):\r\n        \"\"\"\r\n        plot a DataFrame\r\n        type = 'bar', 'area', 'box', \r\n        \"\"\"\r\n        plt.figure()\r\n        s = io.BytesIO()\r\n        if method.startswith(\".\"):\r\n            method = method[1:]\r\n        if not method.startswith(\"plot\"):\r\n            method = \"plot.\" + method\r\n        #\r\n        ax = eval(\"self._obj.\"+ method)\r\n        #\r\n        plt.savefig(s, format='png', bbox_inches=\"tight\")\r\n        plt.close()\r\n        s = base64.b64encode(s.getvalue()).decode(\"utf-8\").replace(\"\\n\", \"\")\r\n        #\r\n        htmlDf = viewerForm.htmlDf\r\n        html_toAdd = \"\"\"<img align=\"left\" src=\"data:image/png;base64,{0}\">\"\"\".format(s)   \r\n        #\r\n        # add to the current\r\n        htmlDf = re.sub(r\"<\\/body>\", html_toAdd + r\"<br clear=left><hr><br></body>\", htmlDf)\r\n        #\r\n        # update the html in form\r\n        viewerForm.HtmlText = htmlDf\r\n\r\n    \r\nviewerForm = IN[0]\r\n\r\nall_cable_tray = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_CableTray).WhereElementIsNotElementType().ToElements()\r\n\r\ndf = pd.DataFrame({'DB_Element': all_cable_tray})\r\n#\r\ndf['Name'] = df.apply(lambda x: x['DB_Element'].get_Name(), axis=1)\r\n#\r\ndf['Service'] = df.apply(lambda x: x['DB_Element'].get_Parameter(BuiltInParameter.RBS_CTC_SERVICE_TYPE).AsValueString(), axis=1).astype(str)\r\n#\r\ndf['Hauteur'] = df.apply(lambda x: x['DB_Element'].get_Parameter(BuiltInParameter.RBS_CABLETRAY_HEIGHT_PARAM).AsValueString(), axis=1).astype(str)\r\n#\r\ndf['Largeur'] = df.apply(lambda x: x['DB_Element'].get_Parameter(BuiltInParameter.RBS_CABLETRAY_WIDTH_PARAM).AsValueString(), axis=1).astype(str)\r\n#\r\ndf['Longueur'] = df.apply(lambda x: x['DB_Element'].get_Parameter(BuiltInParameter.CURVE_ELEM_LENGTH).AsValueString(), axis=1).apply(pd.to_numeric)\r\n\r\n\r\n#\r\ndf.viewer.Show()\r\n\r\ndf.viewer.Show(5)\r\ndf.dtypes.to_frame().viewer.Show()\r\n##\r\n##\r\ndfg = df.drop(['DB_Element'], axis=1)\r\ndfg = dfg.groupby('Service')['Longueur'].sum()\r\ndfg.to_frame().viewer.Show()\r\n### \r\ndfg.to_frame().viewer.Plot()\r\ndfg.to_frame().viewer.Plot(\"plot.bar(rot=0)\")\r\ndf.viewer.Plot(\"box()\")\r\n\r\nOUT = df.__repr__ , df.dtypes\r\n\r\n\r\n",
+      "Engine": "CPython3",
+      "EngineName": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "d2e7a2f675b04152949c49fe67766adf",
+      "Inputs": [
+        {
+          "Id": "a94156be507646a2b47d266497756d63",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "bfa80fd8285f4edebcd81d94f29150ce",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "import clr\r\nimport sys\r\nimport System\r\nclr.AddReference(\"System.Numerics\")\r\n#\r\n\r\nclr.AddReference('System.Drawing')\r\nclr.AddReference('System.Windows.Forms')\r\nimport System.Drawing\r\nimport System.Windows.Forms\r\n\r\nfrom System.Drawing import *\r\nfrom System.Windows.Forms import *\r\n\r\nmy_path = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)\r\npf_path = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ProgramFilesX86)\r\n\r\nimport time  \r\n\r\n\r\nclass MyForm(Form):\r\n    #\r\n    __namespace__ = f\"MyForm_{int(time.time())}\"\r\n    def __init__(self):\r\n        super().__init__()\r\n        self.htmlDf = \"\"\"\\\r\n        <html>\r\n        <head>\r\n        <meta http-equiv=\"X-UA-Compatible\" content=\"IE=9\">\r\n        <style> \r\n          table, th, td {font-size:10pt; border:1px solid black; border-collapse:collapse; text-align:left;}\r\n          th, td {padding: 5px;}\r\n          tr:nth-child(even) {background: #E0E0E0;}\r\n          tr:hover {background: silver; cursor: pointer;}\r\n        </style>\r\n        </head>\r\n          <body>\r\n          </body>\r\n        </html>\r\n        \"\"\"\r\n        self.InitializeComponent()\r\n    \r\n    def InitializeComponent(self):\r\n        self._webBrowser1 = System.Windows.Forms.WebBrowser()\r\n        self.SuspendLayout()\r\n        # \r\n        # webBrowser1\r\n        # \r\n        self._webBrowser1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right\r\n        self._webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill\r\n        self._webBrowser1.Location = System.Drawing.Point(0, 0)\r\n        self._webBrowser1.ScriptErrorsSuppressed = True\r\n        self._webBrowser1.Name = \"webBrowser1\"\r\n        self._webBrowser1.Size = System.Drawing.Size(594, 528)\r\n        self._webBrowser1.TabIndex = 0\r\n        self._webBrowser1.DocumentText = self.htmlDf\r\n        self._webBrowser1.DocumentCompleted += self.WebBrowser1DocumentCompleted\r\n        # \r\n        # Form27\r\n        # \r\n        self.ClientSize = System.Drawing.Size(600, 540)\r\n        self.Controls.Add(self._webBrowser1)\r\n        self.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show\r\n        self.SizeChanged += self.FormSizeChanged\r\n        self.Name = \"Form27\"\r\n        self.Text = \"PandasViewer\"\r\n        \r\n    def WebBrowser1DocumentCompleted(self, sender, e):\r\n        #self._webBrowser1.Size = self._webBrowser1.Document.Body.ScrollRectangle.Size\r\n        self._webBrowser1.Document.Body.ScrollIntoView(False)\r\n        \r\n    def FormSizeChanged(self, sender, e):\r\n        self._webBrowser1.Size = System.Drawing.Size.Subtract(self.ClientSize, System.Drawing.Size(10, 10))\r\n        self._webBrowser1.Document.Body.Width = self.ClientSize.Width - 10\r\n        \r\n    #@property\r\n    def get_HtmlText(self):\r\n        #print(self.htmlDf)\r\n        return self.htmlDf\r\n        \r\n    #@HtmlText.setter\r\n    def set_HtmlText(self, value):\r\n        self.htmlDf = value\r\n        self._webBrowser1.Document.OpenNew(True)\r\n        self._webBrowser1.Document.Write(self.htmlDf)\r\n        self._webBrowser1.Refresh()\r\n        \r\n        #self.Activate()\r\n    HtmlText = clr.clrproperty(str, get_HtmlText, set_HtmlText)\r\n\r\n\r\n#if \"viewerForm\" not in dict(globals()): # get global variables\r\nviewerForm = MyForm()\r\nviewerForm.Show()\r\nOUT = viewerForm",
+      "Engine": "CPython3",
+      "EngineName": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "21c8da28483a4f2e86eb18ce7649bff7",
+      "Inputs": [
+        {
+          "Id": "39ce310c8c1b49ac882a05ad1573a45b",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "b35696a2754840efb03b7845b94e8af1",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Exécute un script Python intégré."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "29111d362dad49a0b783f2b778b05fbb",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "2c819c28142e4ae1af698fc002e45960",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Sélection entre True et False."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "b35696a2754840efb03b7845b94e8af1",
+      "End": "a94156be507646a2b47d266497756d63",
+      "Id": "36c62e53b4fb49d09baa3bcc2924ca68",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "2c819c28142e4ae1af698fc002e45960",
+      "End": "39ce310c8c1b49ac882a05ad1573a45b",
+      "Id": "99b15705508743e6a38b30c798d72cff",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "2.12",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "1.10",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "Aucun",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.16.1.2727",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Aperçu en arrière-plan",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Name": "Python Script with viewer",
+        "ShowGeometry": true,
+        "Id": "d2e7a2f675b04152949c49fe67766adf",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 210.84418872639844,
+        "Y": -465.08113431622064
+      },
+      {
+        "Name": "Python Script | Form",
+        "ShowGeometry": true,
+        "Id": "21c8da28483a4f2e86eb18ce7649bff7",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -257.72718883835381,
+        "Y": -458.260300321615
+      },
+      {
+        "Name": "Start a new File",
+        "ShowGeometry": true,
+        "Id": "29111d362dad49a0b783f2b778b05fbb",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -574.80462947987235,
+        "Y": -455.0828257994998
+      }
+    ],
+    "Annotations": [],
+    "X": 145.7938126023495,
+    "Y": 413.80543641452118,
+    "Zoom": 0.48773890295728289
+  }
+}
