@@ -1,0 +1,202 @@
+{
+  "Uuid": "6c2dcbcd-2f49-4503-8f5e-f9b63fbc2fd6",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "terrasac_geom_DYN3_v0.4",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "Code": "import clr\r\nimport System\r\nclr.AddReference('ProtoGeometry')\r\nfrom Autodesk.DesignScript.Geometry import *\r\nimport math\r\n\r\nclr.AddReference('DSCoreNodes')\r\nfrom DSCore import Color as DSColor \r\nclr.AddReference('GeometryColor')\r\nfrom Modifiers import GeometryColor\r\n\r\n\r\nclr.AddReference('DynamoRevitDS')\r\nimport Dynamo \r\nclr.AddReference('DynamoCore')\r\nfrom Dynamo.Graph import UpdateValueParams\r\n#access to the current Dynamo instance and workspace\r\ndynamoRevit = Dynamo.Applications.DynamoRevit()\r\nengine = dynamoRevit.RevitDynamoModel.EngineController\r\ncurrentWorkspace = dynamoRevit.RevitDynamoModel.CurrentWorkspace\r\nmodel = dynamoRevit.RevitDynamoModel\r\nnet_clr_runtime_name = \".Net Runtime : \" + str(System.Environment.Version)\r\n\r\n# Define the function for matrix multiplication (matrix by vector)\r\ndef matrix_multiply(mat, vec):\r\n    return [\r\n        sum(mat[i][j] * vec[j] for j in range(len(vec)))\r\n        for i in range(len(mat))\r\n    ]\r\n\r\n# Project 4D coordinates to 3D\r\ndef project_4d_to_3d(point, scale, center):\r\n    w = 1.0 / (4 - point[3])  # Perspective projection\r\n    return [scale * w * point[i] + center[i] for i in range(3)]\r\n\r\n# Define a function to create lines between points\r\ndef create_lines(points, connections_colors):\r\n    lines = []\r\n    for start, end, ds_color in connections_colors:\r\n        line = Line.ByStartPointEndPoint(points[start], points[end])\r\n        objColor = GeometryColor.ByGeometryColor(line, ds_color)\r\n        lines.append(objColor)\r\n    return lines\r\n\r\n# Define the tesseract's vertices in 4D\r\npoints_4d = [\r\n    [-1, -1, -1, 1], [1, -1, -1, 1], [1, 1, -1, 1], [-1, 1, -1, 1],\r\n    [-1, -1, 1, 1], [1, -1, 1, 1], [1, 1, 1, 1], [-1, 1, 1, 1],\r\n    [-1, -1, -1, -1], [1, -1, -1, -1], [1, 1, -1, -1], [-1, 1, -1, -1],\r\n    [-1, -1, 1, -1], [1, -1, 1, -1], [1, 1, 1, -1], [-1, 1, 1, -1]\r\n]\r\n\r\n# Define rotation angles and setup rotation matrices for 4D rotation\r\n#find the specific node\r\nnodeK = next((i for i in currentWorkspace.Nodes if i.Name ==\"angle\"), None)\r\nif nodeK is not None:\r\n    # get values\r\n    d = nodeK.GetValue(0,engine)\r\n    angle = float(nodeK.GetValue(0,engine).Data) \r\n\r\ncos_a, sin_a = math.cos(angle), math.sin(angle)\r\nrotation_xy = [[cos_a, -sin_a, 0, 0], [sin_a, cos_a, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]\r\nrotation_zw = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, cos_a, -sin_a], [0, 0, sin_a, cos_a]]\r\n\r\n# Apply rotations\r\npoints_4d_rotated = [matrix_multiply(rotation_xy, p) for p in points_4d]\r\npoints_4d_rotated = [matrix_multiply(rotation_zw, p) for p in points_4d_rotated]\r\n\r\n# Project points to 3D\r\nscale = 200  # Scale factor for visualization\r\ncenter = [400, 400, 0]  # Center of the tesseract projection\r\npoints_3d = [Point.ByCoordinates(*project_4d_to_3d(p, scale, center)) for p in points_4d_rotated]\r\n\r\n# Define connections based on the tesseract's edges\r\nds_colorA = DSColor.ByARGB(255, 255,0,0)\r\nds_colorB = DSColor.ByARGB(255, 46, 134, 193)\r\nds_colorC = DSColor.ByARGB(255, 0,0,0)\r\nconnections_colors = [\r\n    # first cube\r\n    (0, 1, ds_colorA), (1, 2, ds_colorA), (2, 3, ds_colorA), (3, 0, ds_colorA),\r\n    (4, 5, ds_colorA), (5, 6, ds_colorA), (6, 7, ds_colorA), (7, 4, ds_colorA),\r\n    (0, 4, ds_colorA), (1, 5, ds_colorA), (2, 6, ds_colorA), (3, 7, ds_colorA),\r\n    # second cube\r\n    (8, 9, ds_colorB), (9, 10, ds_colorB), (10, 11, ds_colorB), (11, 8, ds_colorB),\r\n    (12, 13, ds_colorB), (13, 14, ds_colorB), (14, 15, ds_colorB), (15, 12, ds_colorB),\r\n    (8, 12, ds_colorB), (9, 13, ds_colorB), (10, 14, ds_colorB), (11, 15, ds_colorB),\r\n    # sommets\r\n    (0, 8, ds_colorC), (1, 9, ds_colorC), (2, 10, ds_colorC), (3, 11, ds_colorC),\r\n    (4, 12, ds_colorC), (5, 13, ds_colorC), (6, 14, ds_colorC), (7, 15, ds_colorC)\r\n]\r\n\r\n# Create lines between connected points\r\nlines = create_lines(points_3d, connections_colors)\r\n\r\n# Output the lines to Dynamo to visualize the tesseract\r\nOUT = net_clr_runtime_name, lines, points_3d\r\n\r\nparams = UpdateValueParams(\"Code\", \"{0};\".format(angle + 0.01))\r\nnodeK.UpdateValue(params)\r\n",
+      "Engine": "CPython3",
+      "VariableInputPorts": true,
+      "Id": "ed0431348e494ade802dc7fa175f3010",
+      "NodeType": "PythonScriptNode",
+      "Inputs": [
+        {
+          "Id": "24c178c4979349a6a3b6c15c390e232e",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "aa4fa3d7a65a459aabbf72503f150e41",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "Id": "68b88780a809460299f096d987875faf",
+      "NodeType": "CodeBlockNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "013b5e0ce9c94d06bd94ddb5fc0e7fe5",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly",
+      "Code": "0;"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "Id": "35a7d8f0269348ebb87e547591e550ce",
+      "NodeType": "FunctionNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "cad5455ae01247b193cf888c4e98348e",
+          "Name": "dateTime",
+          "Description": "DateTime representing the present time",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "FunctionSignature": "DSCore.DateTime.Now",
+      "Replication": "Auto",
+      "Description": "The current system date and time.\n\nDateTime.Now: var"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "cad5455ae01247b193cf888c4e98348e",
+      "End": "24c178c4979349a6a3b6c15c390e232e",
+      "Id": "d3f43ff420cd419fabf4b09a0c0d06b6",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "EnableLegacyPolyCurveBehavior": true,
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "3.0",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "7.1",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "None",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "3.0.3.7597",
+      "RunType": "Manual",
+      "RunPeriod": "200"
+    },
+    "Camera": {
+      "Name": "_Background Preview",
+      "EyeX": 148.87557983398438,
+      "EyeY": 63.07842254638672,
+      "EyeZ": -4.043853759765625,
+      "LookX": 80.22892761230469,
+      "LookY": -24.413833618164062,
+      "LookZ": -170.5772247314453,
+      "UpX": 0.0546659417450428,
+      "UpY": 0.9917171597480774,
+      "UpZ": -0.11622688174247742
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Id": "ed0431348e494ade802dc7fa175f3010",
+        "Name": "Python Script",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 914.2507644039985,
+        "Y": 657.887899955559
+      },
+      {
+        "Id": "68b88780a809460299f096d987875faf",
+        "Name": "angle",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1618.4212579229034,
+        "Y": 668.7594907337877
+      },
+      {
+        "Id": "35a7d8f0269348ebb87e547591e550ce",
+        "Name": "DateTime.Now",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 663.9572020985194,
+        "Y": 655.3437277047274
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "888cc9191a1e4e6d938ba0911c745eee",
+        "Title": "angle (init 0) ",
+        "DescriptionText": "<Double-cliquer ici pour modifier la description du groupe>",
+        "IsExpanded": true,
+        "WidthAdjustment": 0.0,
+        "HeightAdjustment": 0.0,
+        "Nodes": [
+          "68b88780a809460299f096d987875faf"
+        ],
+        "HasNestedGroups": false,
+        "Left": 1608.4212579229034,
+        "Top": 564.7594907337877,
+        "Width": 134.0,
+        "Height": 236.0,
+        "FontSize": 18.0,
+        "GroupStyleId": "00000000-0000-0000-0000-000000000000",
+        "InitialTop": 668.7594907337877,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 94.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": -387.9485195032014,
+    "Y": -347.4816709607004,
+    "Zoom": 0.8242371725104218
+  }
+}

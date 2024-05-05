@@ -1,0 +1,301 @@
+{
+  "Uuid": "0467e7e6-ce77-4f63-acbd-5a5aa6af5e63",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "mandelbrot zoom_DYN3_v6",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "Id": "af886626ab1d4628bb963ae8c5abfa50",
+      "NodeType": "FunctionNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "79624fcc711942c886e3e5acd6de0478",
+          "Name": "dateTime",
+          "Description": "DateTime representing the present time",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "FunctionSignature": "DSCore.DateTime.Now",
+      "Replication": "Auto",
+      "Description": "The current system date and time.\n\nDateTime.Now: var"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "Code": "#import time\r\n#t1 = time.time()\r\n#import sys\r\nimport clr\r\nimport System\r\nfrom System.Runtime.InteropServices import Marshal\r\n\r\nclr.AddReference(\"System.Core\")\r\nclr.ImportExtensions(System.Linq)\r\n\r\nclr.AddReference('DynamoRevitDS')\r\nimport Dynamo \r\n#reference dynamo core to update node values\r\nclr.AddReference('DynamoCore')\r\nfrom Dynamo.Graph import UpdateValueParams\r\n\r\n#access to the current Dynamo instance and workspace\r\ndynamoRevit = Dynamo.Applications.DynamoRevit()\r\nengine = dynamoRevit.RevitDynamoModel.EngineController\r\ncurrentWorkspace = dynamoRevit.RevitDynamoModel.CurrentWorkspace\r\nmodel = dynamoRevit.RevitDynamoModel\r\n\r\nclr.AddReference('System.Drawing')\r\nfrom System.Drawing import Color, Bitmap, Imaging, Rectangle, Image\r\n\r\nimport colorsys\r\nimport math\r\n#import time\r\n\r\npx, py = -0.7746806106269039, -0.1374168856037867 #Tante Renate\r\nR = 3 \r\nmax_iteration = 170 #2500\r\nw, h = 400, 400 #1024,1024\r\nmfactor = 0.5\r\n\r\n\r\n\r\ndef Mandelbrot2(*args):\r\n    \"\"\"\r\n    get Mandelbrot fractal \r\n    \"\"\"\r\n    x, y, max_iteration, minx, maxx, miny, maxy = args\r\n    zx = 0\r\n    zy = 0\r\n    RX1, RX2, RY1, RY2 = px-R/2.0, px+R/2.0, py-R/2.0, py+R/2.0\r\n    cx = (x-minx)/float(maxx-minx)*(RX2-RX1)+RX1\r\n    cy = (y-miny)/float(maxy-miny)*(RY2-RY1)+RY1\r\n    i=0\r\n    while zx**2 + zy**2 <= 4 and i < max_iteration:\r\n        temp = zx**2 - zy**2\r\n        zy = 2*zx*zy + cy\r\n        zx = temp + cx\r\n        i += 1\r\n    return x, y, i\r\n    \r\ndef image_by_lockBits(data_array):\r\n    global w\r\n    global h\r\n    global max_iteration\r\n    global mfactor\r\n    bmpOut = Bitmap(w, h, Imaging.PixelFormat.Format24bppRgb)\r\n    newData = bmpOut.LockBits(\r\n                            Rectangle(0, 0, w, h),\r\n                            Imaging.ImageLockMode.WriteOnly, bmpOut.PixelFormat)\r\n    newBytesPerPixel = int(Image.GetPixelFormatSize(bmpOut.PixelFormat) / 8)\r\n    for x, y, c in data_array:\r\n        v = c**mfactor/float(max_iteration**mfactor)\r\n        hv = 0.67-v\r\n        if hv<0: \r\n            hv+=1\r\n        r,g,b = colorsys.hsv_to_rgb(hv,1,1-(v-0.1)**2/0.9**2)\r\n        r = min(255,round(r*255))\r\n        g = min(255,round(g*255))\r\n        b = min(255,round(b*255))\r\n        \r\n        newPixelIndex = y * newData.Stride + x * newBytesPerPixel\r\n        Marshal.WriteByte(newData.Scan0, newPixelIndex, r)\r\n        Marshal.WriteByte(newData.Scan0, newPixelIndex + 1, g)\r\n        Marshal.WriteByte(newData.Scan0, newPixelIndex + 2, b)\r\n    bmpOut.UnlockBits(newData)\r\n    #\r\n    return bmpOut\r\n \r\ndef image_by_setPixel(data_array):\r\n    global w\r\n    global h\r\n    global max_iteration\r\n    global mfactor\r\n    #\r\n    bmpOut = Bitmap(w, h)\r\n    # color pixels\r\n    for x, y, c in data_array:\r\n        v = c**mfactor/float(max_iteration**mfactor)\r\n        hv = 0.67-v\r\n        if hv<0: \r\n            hv+=1\r\n        r,g,b = colorsys.hsv_to_rgb(hv,1,1-(v-0.1)**2/0.9**2)\r\n        r = min(255,round(r*255))\r\n        g = min(255,round(g*255))\r\n        b = min(255,round(b*255))\r\n        bmpOut.SetPixel(x, y, Color.FromArgb(r, g, b))\r\n    #\r\n    return bmpOut\r\n\r\ndef gen_Mandelbrot_image(sequence, useSetPixel=False):\r\n    global w\r\n    global h\r\n    byteArr = []\r\n    ziplst = []\r\n    for x in range(w):\r\n        for y in range(h):\r\n            ziplst.append([x, y, max_iteration, 0, w-1, 0, h-1])\r\n            \r\n    # apply multiprocessing parrlalelisme\r\n    threadResult = ziplst.AsParallel()\\\r\n        .WithDegreeOfParallelism(System.Environment.ProcessorCount)\\\r\n        .WithExecutionMode(System.Linq.ParallelExecutionMode.ForceParallelism)\\\r\n        .Select(lambda e : Mandelbrot2(*e))\r\n    #\r\n    if useSetPixel:\r\n        return image_by_setPixel(threadResult)\r\n    else:\r\n        return image_by_lockBits(threadResult)\r\n\r\nnodeK = next((i for i in currentWorkspace.Nodes if i.Name.Equals(\"K_R\")), None)\r\nif nodeK is not None:\r\n    # get values\r\n    k = int(nodeK.GetValue(0,engine).Data) \r\n    R = float(nodeK.GetValue(1,engine).Data) \r\n\r\nf = 0.80\r\nRZF = 1/1000000000000\r\nuseSetPixel = IN[1]\r\n\r\nif k < 40 :\r\n    mfactor = 0.5 + (1/float(1000000000000))**0.1/float(R**0.1)\r\n    #print(k,mfactor)\r\n    #t1 = time.time()\r\n    imgM = gen_Mandelbrot_image(k, useSetPixel)\r\n    #print(\"elasped {}s\".format(time.time() - t1))\r\n    R *= f\r\n    k+=1\r\n    params = UpdateValueParams(\"Code\", \"{0};\\n{1};\".format(k, R))\r\n    nodeK.UpdateValue(params)\r\n\r\n    OUT = imgM",
+      "Engine": "IronPython3",
+      "VariableInputPorts": true,
+      "Id": "04390a4e1aa340ac8d5e6bd6244b7c49",
+      "NodeType": "PythonScriptNode",
+      "Inputs": [
+        {
+          "Id": "f670a3e6e558442f93d671c3e9757310",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "59053d536a1f4f7882d0d064ebbcd5a9",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "bad580a051c04726a03c739a9268bb0f",
+          "Name": "OUT",
+          "Description": "Résultat du script Python",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.WatchImageCore, CoreNodeModels",
+      "Id": "6aeb392feae14df9b977e34f72356832",
+      "NodeType": "ExtensionNode",
+      "Inputs": [
+        {
+          "Id": "866b3261b26947f98fd0b7d6672657d1",
+          "Name": "image",
+          "Description": "Image pour visualisation",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "8cc7fb93423b43ce8b8af7d7555db43b",
+          "Name": "image",
+          "Description": "Image pour visualisation",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Previews an image"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "Id": "9b83d6e1f1f04e9ea34eacce174f8fe8",
+      "NodeType": "CodeBlockNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f8a1b5e9adff4726b51c25b8dced0586",
+          "Name": "",
+          "Description": "Value of expression at line 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "3ce76cf75e8d4190b500a2941806e30b",
+          "Name": "",
+          "Description": "Value of expression at line 2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Allows for DesignScript code to be authored directly",
+      "Code": "1;\n2;"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "Id": "ae3112ce51ec43ae89cf09139723d68c",
+      "NodeType": "BooleanInputNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "df9df29fef2b420483cd6cdd224e05c2",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Enables selection between True and False",
+      "InputValue": true
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "79624fcc711942c886e3e5acd6de0478",
+      "End": "f670a3e6e558442f93d671c3e9757310",
+      "Id": "2a7deda3abeb49b689e6f615ce904c13",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "bad580a051c04726a03c739a9268bb0f",
+      "End": "866b3261b26947f98fd0b7d6672657d1",
+      "Id": "a9b1d0caff3b41f7a0768e128389dfef",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "df9df29fef2b420483cd6cdd224e05c2",
+      "End": "59053d536a1f4f7882d0d064ebbcd5a9",
+      "Id": "0ce828cffe4049378e11d7e4c3d3a0d9",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "EnableLegacyPolyCurveBehavior": true,
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "2.13",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "2.0",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "None",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "3.0.3.7597",
+      "RunType": "Manual",
+      "RunPeriod": "5000"
+    },
+    "Camera": {
+      "Name": "_Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Id": "af886626ab1d4628bb963ae8c5abfa50",
+        "Name": "DateTime.Now",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1096.655371520137,
+        "Y": -198.75565135026645
+      },
+      {
+        "Id": "04390a4e1aa340ac8d5e6bd6244b7c49",
+        "Name": "Python Script | Main",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1354.2342533559504,
+        "Y": -100.39266110178943
+      },
+      {
+        "Id": "6aeb392feae14df9b977e34f72356832",
+        "Name": "Watch Image",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1711.8698323800616,
+        "Y": -105.73650340705458
+      },
+      {
+        "Id": "9b83d6e1f1f04e9ea34eacce174f8fe8",
+        "Name": "K_R",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1110.0215758295044,
+        "Y": 211.9253627824265
+      },
+      {
+        "Id": "ae3112ce51ec43ae89cf09139723d68c",
+        "Name": "Use Set Pixel ?",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1086.7768448162606,
+        "Y": -50.50934665555968
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "94414f042ffe46ad89fe8496fc5ce747",
+        "Title": "init values (1,2)",
+        "DescriptionText": "set values at start :\r\n1\r\n2",
+        "IsExpanded": true,
+        "WidthAdjustment": 0.0,
+        "HeightAdjustment": 0.0,
+        "Nodes": [
+          "9b83d6e1f1f04e9ea34eacce174f8fe8"
+        ],
+        "HasNestedGroups": false,
+        "Left": 1100.0215758295044,
+        "Top": 100.9253627824265,
+        "Width": 122.0,
+        "Height": 253.00000000000003,
+        "FontSize": 18.0,
+        "GroupStyleId": "00000000-0000-0000-0000-000000000000",
+        "InitialTop": 211.9253627824265,
+        "InitialHeight": 145.00000000000003,
+        "TextblockHeight": 101.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": -245.86038190344908,
+    "Y": 221.5760569220016,
+    "Zoom": 0.5695742507715587
+  }
+}
